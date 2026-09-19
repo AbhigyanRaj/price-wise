@@ -1,0 +1,766 @@
+openapi: 3.0.3
+info:
+  title: Pricewise — Dynamic Pricing Intelligence API
+  description: >
+    REST API for the multi-tenant, multi-agent dynamic pricing intelligence
+    platform. All AI/LLM calls happen server-side only; the frontend never
+    calls Groq directly. Auth uses httpOnly cookies (access + refresh),
+    so most endpoints have no bearer token in the request — the cookie
+    is sent automatically by the browser.
+  version: 1.0.0
+servers:
+  - url: https://pricewise-api.onrender.com
+    description: Production (Render)
+  - url: http://localhost:4000
+    description: Local development
+
+security:
+  - cookieAuth: []
+
+tags:
+  - name: Auth
+  - name: Organizations
+  - name: Products
+  - name: Recommendations
+  - name: Audit
+  - name: Mock Ecommerce
+
+paths:
+  # ---------------------------------------------------------------- AUTH
+  /auth/signup:
+    post:
+      tags: [Auth]
+      summary: Create a new organization and its first admin user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name, organizationName]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 10 }
+                name: { type: string }
+                organizationName: { type: string }
+      responses:
+        '201':
+          description: Account + organization created, auth cookies set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessUser' }
+        '409':
+          description: Email already in use
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/signup/invite:
+    post:
+      tags: [Auth]
+      summary: Join an existing organization via an invite code
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name, inviteCode]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 10 }
+                name: { type: string }
+                inviteCode: { type: string }
+      responses:
+        '201':
+          description: Joined organization, auth cookies set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessUser' }
+        '400':
+          description: Invite invalid, expired, or already used
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in with email + password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Auth cookies set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessUser' }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate the refresh token and issue a new access token
+      security: []
+      responses:
+        '200':
+          description: New auth cookies set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessMessage' }
+        '401':
+          description: Refresh token missing, expired, or revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke the current refresh token and clear cookies
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessMessage' }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the current authenticated user + organization
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessUser' }
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # ---------------------------------------------------------- ORGANIZATIONS
+  /org/settings:
+    get:
+      tags: [Organizations]
+      summary: Get organization settings (thresholds, margin floors)
+      responses:
+        '200':
+          description: Organization settings
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Organization' }
+    patch:
+      tags: [Organizations]
+      summary: Update organization settings (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confidenceThreshold: { type: number, minimum: 0, maximum: 1 }
+                name: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Organization' }
+        '403':
+          description: Requires ADMIN role
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /org/invites:
+    get:
+      tags: [Organizations]
+      summary: List pending invites (admin only)
+      responses:
+        '200':
+          description: List of invites
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Invite' }
+    post:
+      tags: [Organizations]
+      summary: Create an invite code (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '201':
+          description: Invite created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Invite' }
+        '403':
+          description: Requires ADMIN role
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # -------------------------------------------------------------- PRODUCTS
+  /products:
+    get:
+      tags: [Products]
+      summary: List products in the current organization's catalog
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: sortBy
+          schema: { type: string, enum: [name, currentPrice, inventoryLevel, updatedAt] }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Paginated product list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Product' }
+                      pagination: { $ref: '#/components/schemas/OffsetPagination' }
+    post:
+      tags: [Products]
+      summary: Create a product (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductInput' }
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Product' }
+
+  /products/{productId}:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    get:
+      tags: [Products]
+      summary: Get a single product
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Product' }
+        '404':
+          description: Not found or belongs to another organization
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    patch:
+      tags: [Products]
+      summary: Update a product (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Product' }
+    delete:
+      tags: [Products]
+      summary: Delete a product (admin only)
+      responses:
+        '204':
+          description: Deleted
+
+  /products/{productId}/simulate-market-event:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    post:
+      tags: [Products]
+      summary: Mutate a product's competitor price or demand signal to simulate a live market event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventType]
+              properties:
+                eventType:
+                  type: string
+                  enum: [competitor_price_drop, competitor_price_increase, demand_spike, new_competitor]
+                magnitudePct:
+                  type: number
+                  description: e.g. -15 for a 15% competitor price drop
+      responses:
+        '200':
+          description: Event applied
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessMessage' }
+
+  /products/{productId}/generate-recommendation:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    post:
+      tags: [Products]
+      summary: Trigger the 5-agent pricing pipeline for this product
+      description: >
+        Response is a Server-Sent Events stream (Content-Type: text/event-stream).
+        Events: {agent, status: "running"|"done"|"error", output?} for each of the
+        5 agents, followed by a final {type: "recommendation_ready", data: PricingRecommendation}
+        or {type: "recommendation_failed", error}.
+      responses:
+        '200':
+          description: SSE stream of agent progress events
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  # --------------------------------------------------------- RECOMMENDATIONS
+  /recommendations:
+    get:
+      tags: [Recommendations]
+      summary: List pricing recommendations, cursor-paginated
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/RecommendationStatus' }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        '200':
+          description: Cursor-paginated recommendation list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/PricingRecommendation' }
+                      pagination: { $ref: '#/components/schemas/CursorPagination' }
+
+  /recommendations/{recommendationId}:
+    parameters:
+      - $ref: '#/components/parameters/RecommendationId'
+    get:
+      tags: [Recommendations]
+      summary: Get full detail including every agent's individual contribution
+      responses:
+        '200':
+          description: Recommendation with agent breakdown
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PricingRecommendationDetail' }
+
+  /recommendations/{recommendationId}/approve:
+    parameters:
+      - $ref: '#/components/parameters/RecommendationId'
+    post:
+      tags: [Recommendations]
+      summary: Approve a pending recommendation (Pricing Analyst or Admin)
+      responses:
+        '200':
+          description: Approved and executed against the mock e-commerce API
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PricingRecommendation' }
+
+  /recommendations/{recommendationId}/reject:
+    parameters:
+      - $ref: '#/components/parameters/RecommendationId'
+    post:
+      tags: [Recommendations]
+      summary: Reject a pending recommendation with a reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 3 }
+      responses:
+        '200':
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PricingRecommendation' }
+
+  /recommendations/{recommendationId}/modify:
+    parameters:
+      - $ref: '#/components/parameters/RecommendationId'
+    post:
+      tags: [Recommendations]
+      summary: Override the recommended price with a manually chosen price
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [modifiedPrice]
+              properties:
+                modifiedPrice: { type: number, exclusiveMinimum: 0 }
+      responses:
+        '200':
+          description: Modified and executed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PricingRecommendation' }
+
+  # ------------------------------------------------------------------ AUDIT
+  /audit-logs:
+    get:
+      tags: [Audit]
+      summary: List audit log entries, cursor-paginated
+      parameters:
+        - in: query
+          name: entityType
+          schema: { type: string }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        '200':
+          description: Cursor-paginated audit log
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/AuditLog' }
+                      pagination: { $ref: '#/components/schemas/CursorPagination' }
+
+  # --------------------------------------------------------- MOCK ECOMMERCE
+  /mock/ecommerce/update-price:
+    post:
+      tags: [Mock Ecommerce]
+      summary: >
+        Internal mock of an external e-commerce platform's price-update endpoint.
+        Called only by the Execution & Compliance agent, never by the frontend.
+        Simulates latency and an occasional induced failure to exercise rollback logic.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku, newPrice]
+              properties:
+                sku: { type: string }
+                newPrice: { type: number }
+      responses:
+        '200':
+          description: Price updated on the (mock) platform
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessMessage' }
+        '502':
+          description: Simulated platform failure — caller must roll back
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+
+  parameters:
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RecommendationId:
+      name: recommendationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    Role:
+      type: string
+      enum: [ADMIN, PRICING_ANALYST]
+
+    RecommendationStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED, MODIFIED, AUTO_EXECUTED, FAILED]
+
+    InventoryStatus:
+      type: string
+      enum: [LOW, NORMAL, OVERSTOCKED]
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string, example: VALIDATION_ERROR }
+            message: { type: string }
+            details: { type: object, nullable: true }
+
+    SuccessEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+
+    SuccessMessage:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            message: { type: string }
+
+    SuccessUser:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user: { $ref: '#/components/schemas/User' }
+                organization: { $ref: '#/components/schemas/Organization' }
+
+    OffsetPagination:
+      type: object
+      properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalCount: { type: integer }
+        totalPages: { type: integer }
+
+    CursorPagination:
+      type: object
+      properties:
+        nextCursor: { type: string, nullable: true }
+        hasMore: { type: boolean }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { $ref: '#/components/schemas/Role' }
+        organizationId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+
+    Organization:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        confidenceThreshold: { type: number }
+        createdAt: { type: string, format: date-time }
+
+    Invite:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/Role' }
+        code: { type: string }
+        expiresAt: { type: string, format: date-time }
+        usedAt: { type: string, format: date-time, nullable: true }
+
+    ProductInput:
+      type: object
+      required: [sku, name, category, currentPrice, cost, marginFloorPct, inventoryLevel]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        category: { type: string }
+        currentPrice: { type: number }
+        cost: { type: number }
+        marginFloorPct: { type: number, minimum: 0, maximum: 1 }
+        inventoryLevel: { type: integer }
+
+    Product:
+      allOf:
+        - $ref: '#/components/schemas/ProductInput'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            organizationId: { type: string, format: uuid }
+            inventoryStatus: { $ref: '#/components/schemas/InventoryStatus' }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    PricingRecommendation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        recommendedPrice: { type: number }
+        currentPriceAtTime: { type: number }
+        confidenceScore: { type: number, minimum: 0, maximum: 1 }
+        rationale: { type: string }
+        status: { $ref: '#/components/schemas/RecommendationStatus' }
+        resolvedByUserId: { type: string, format: uuid, nullable: true }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        rejectionReason: { type: string, nullable: true }
+        modifiedPrice: { type: number, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    AgentRun:
+      type: object
+      properties:
+        agentName:
+          type: string
+          enum: [MARKET_INTELLIGENCE, DEMAND_FORECASTING, INVENTORY_COST, PRICING_STRATEGY, EXECUTION_COMPLIANCE]
+        input: { type: object }
+        output: { type: object }
+        durationMs: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    PricingRecommendationDetail:
+      allOf:
+        - $ref: '#/components/schemas/PricingRecommendation'
+        - type: object
+          properties:
+            agentRuns:
+              type: array
+              items: { $ref: '#/components/schemas/AgentRun' }
+
+    AuditLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid, nullable: true }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: string }
+        beforeValue: { type: object, nullable: true }
+        afterValue: { type: object, nullable: true }
+        createdAt: { type: string, format: date-time }
