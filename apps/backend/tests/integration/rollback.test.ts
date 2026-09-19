@@ -1,25 +1,33 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { env } from "../../src/lib/env";
 import { prisma, resetDb } from "../helpers/testDb";
 import { startTestServer, type TestServer } from "../helpers/testServer";
 import { api, createTestOrg, product, type TenantFixture } from "../helpers/factories";
 
 // The platform is forced to fail for this whole file rather than relying on the
-// 10% injected failure rate, which would make the assertion flaky. This
-// exercises the real execution path, only the outermost network call is faked.
-mock.module("../../src/services/mockPlatform.service", () => ({
-  updatePlatformPrice: async () => {
-    throw new Error("Platform rejected the price update");
-  },
-}));
-
+// injected failure rate, which would make the assertion flaky. This exercises
+// the real execution path; only the outermost network call is made to fail.
+//
+// Driven through the service's own env knob rather than mock.module(), because
+// a module mock in Bun is GLOBAL and outlives the file that declared it. This
+// file used to replace mockPlatform for the whole process, so whichever files
+// ran after it saw every price execution fail. It passed locally, where the
+// alphabetical order puts this file late, and failed on CI, where it does not.
+// A test that breaks other tests depending on filename order is worse than no
+// test.
 let server: TestServer;
 let org: TenantFixture;
+let originalFailureRate: number;
 
 beforeAll(async () => {
+  originalFailureRate = env.MOCK_PLATFORM_FAILURE_RATE;
+  env.MOCK_PLATFORM_FAILURE_RATE = 1; // Math.random() is always below 1.
   server = await startTestServer();
 });
 
 afterAll(async () => {
+  // Restored, so this file cannot affect any that runs after it.
+  env.MOCK_PLATFORM_FAILURE_RATE = originalFailureRate;
   await server.close();
   await prisma.$disconnect();
 });

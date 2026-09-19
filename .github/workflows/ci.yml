@@ -101,11 +101,6 @@ jobs:
         # relation.
         run: bun run --cwd apps/backend test:setup
 
-      - name: Diagnostic - what the app actually parses
-        run: |
-          echo "raw shell env: MOCK_PLATFORM_FAILURE_RATE=${MOCK_PLATFORM_FAILURE_RATE:-<unset>}"
-          bun run --cwd apps/backend -e 'import("./src/lib/env").then(m => console.log("parsed:", JSON.stringify({rate: m.env.MOCK_PLATFORM_FAILURE_RATE, latency: m.env.MOCK_PLATFORM_LATENCY_MS, node: m.env.NODE_ENV})))' || true
-
       - name: Backend tests
         # Unit, integration and tenant isolation. No test makes a network call.
         run: bun run --cwd apps/backend test

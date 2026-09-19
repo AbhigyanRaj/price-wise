@@ -8,7 +8,10 @@ export default tseslint.config(
       "**/dist/**",
       "**/build/**",
       "**/generated/**",
-      "spike/**", // Phase 0.0 throwaway; kept for reference, not linted
+      // Design handoff: a self-contained HTML prototype and its runtime,
+      // supplied as a visual reference to reimplement rather than as source to
+      // ship. Linting someone else's prototype tells us nothing.
+      "new-design/**",
     ],
   },
 
