@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  runtime  = "bun"
+}
+
+datasource db {
+  // Connection URL lives in prisma.config.ts, Prisma 7 moved it out of here.
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- enums
+
+enum Role {
+  ADMIN
+  PRICING_ANALYST
+}
+
+enum InventoryStatus {
+  LOW
+  NORMAL
+  OVERSTOCKED
+}
+
+enum RecStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  MODIFIED
+  AUTO_EXECUTED
+  FAILED
+}
+
+enum AgentName {
+  MARKET_INTELLIGENCE
+  DEMAND_FORECASTING
+  INVENTORY_COST
+  PRICING_STRATEGY
+  EXECUTION_COMPLIANCE
+}
+
+// ------------------------------------------------------------- tenancy
+
+model Organization {
+  id                  String   @id @default(uuid())
+  name                String
+  confidenceThreshold Float    @default(0.85)
+  maxPriceDeltaPct    Float    @default(0.20)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  users           User[]
+  products        Product[]
+  invites         Invite[]
+  recommendations PricingRecommendation[]
+  auditLogs       AuditLog[]
+  categoryRules   CategoryRule[]
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  role           Role     @default(PRICING_ANALYST)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  resolved      PricingRecommendation[] @relation("ResolvedBy")
+
+  @@index([organizationId])
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid())
+  tokenHash    String    @unique
+  userId       String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  // Forms a rotation chain. Re-use of an already-rotated token means two parties
+  // hold it, a theft signal, and the whole chain is revoked in response.
+  replacedById String?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Invite {
+  id             String    @id @default(uuid())
+  organizationId String
+  email          String
+  role           Role
+  code           String    @unique
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+// -------------------------------------------------------------- catalog
+
+model Product {
+  id              String          @id @default(uuid())
+  organizationId  String
+  sku             String
+  name            String
+  category        String
+  currentPrice    Decimal         @db.Decimal(10, 2)
+  cost            Decimal         @db.Decimal(10, 2)
+  marginFloorPct  Float           @default(0.15)
+  inventoryLevel  Int
+  inventoryStatus InventoryStatus @default(NORMAL)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  organization     Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  competitorPrices CompetitorPrice[]
+  demandSignals    DemandSignal[]
+  recommendations  PricingRecommendation[]
+
+  // Uniqueness is scoped per tenant: two organizations may use the same SKU.
+  @@unique([organizationId, sku])
+  @@index([organizationId, category])
+  @@index([organizationId, inventoryStatus])
+}
+
+model CategoryRule {
+  id             String   @id @default(uuid())
+  organizationId String
+  category       String
+  marginFloorPct Float
+  maxDeltaPct    Float
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, category])
+}
+
+model CompetitorPrice {
+  id         String   @id @default(uuid())
+  productId  String
+  competitor String
+  price      Decimal  @db.Decimal(10, 2)
+  scrapedAt  DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, scrapedAt])
+}
+
+model DemandSignal {
+  id          String   @id @default(uuid())
+  productId   String
+  signalType  String // SEASONAL | CATEGORY_TREND | SKU_VELOCITY
+  value       Float
+  periodStart DateTime
+  periodEnd   DateTime
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, periodEnd])
+}
+
+// ------------------------------------------------------ recommendations
+
+model PricingRecommendation {
+  id                 String    @id @default(uuid())
+  // Denormalised from Product. The approval queue, "every pending
+  // recommendation for my org, newest first", is the hottest read path, and
+  // this lets the composite index below answer it without a join.
+  organizationId     String
+  productId          String
+  recommendedPrice   Decimal   @db.Decimal(10, 2)
+  currentPriceAtTime Decimal   @db.Decimal(10, 2)
+  confidenceScore    Float
+  rationale          String
+  factorWeights      Json?
+  status             RecStatus @default(PENDING)
+  resolvedByUserId   String?
+  resolvedAt         DateTime?
+  rejectionReason    String?
+  modifiedPrice      Decimal?  @db.Decimal(10, 2)
+  failureReason      String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  resolvedBy   User?            @relation("ResolvedBy", fields: [resolvedByUserId], references: [id])
+  agentRuns    AgentRun[]
+  executions   PriceExecution[]
+
+  @@index([organizationId, status, createdAt])
+  @@index([productId, createdAt])
+}
+
+model AgentRun {
+  id               String    @id @default(uuid())
+  recommendationId String
+  agentName        AgentName
+  // input/output are Json rather than typed columns: output shapes differ per
+  // agent and will change with every prompt revision. Json keeps the
+  // explainability trail complete without a migration per prompt change.
+  input            Json
+  output           Json?
+  // Tool calls with their arguments, stored so the detail view can show
+  // "get_competitor_prices({lookbackDays: 7})", required by FR-EXP-3.
+  toolCalls        Json?
+  confidence       Float?
+  model            String
+  promptTokens     Int       @default(0)
+  completionTokens Int       @default(0)
+  durationMs       Int
+  error            String?
+  createdAt        DateTime  @default(now())
+
+  recommendation PricingRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId])
+}
+
+model PriceExecution {
+  id               String   @id @default(uuid())
+  recommendationId String
+  attemptedPrice   Decimal  @db.Decimal(10, 2)
+  succeeded        Boolean
+  platformResponse Json?
+  rolledBack       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  recommendation PricingRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  // Null means the system acted rather than a person, that is how an
+  // auto-executed price change is distinguished from a human approval.
+  userId         String?
+  action         String
+  entityType     String
+  entityId       String
+  beforeValue    Json?
+  afterValue     Json?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+  @@index([organizationId, userId, createdAt])
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@pricewise/backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "start": "bun src/server.ts",
+    "build": "bun build src/server.ts --target=bun --outdir dist",
+    "typecheck": "tsc --noEmit",
+    "test": "NODE_ENV=test MOCK_PLATFORM_FAILURE_RATE=0 MOCK_PLATFORM_LATENCY_MS=0 DATABASE_URL=postgresql://abhigyan@127.0.0.1:5432/pricewise_test bun test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "bun run src/scripts/seed.ts",
+    "db:reset": "prisma migrate reset --force && bun run db:seed",
+    "db:studio": "prisma studio",
+    "test:setup": "DATABASE_URL=postgresql://abhigyan@127.0.0.1:5432/pricewise_test prisma migrate deploy"
+  },
+  "dependencies": {
+    "@pricewise/shared": "workspace:*",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "cookie-parser": "1.4.7",
+    "cors": "2.8.6",
+    "express": "5.2.1",
+    "express-rate-limit": "8.7.0",
+    "groq-sdk": "1.6.0",
+    "helmet": "8.3.0",
+    "jose": "6.2.12",
+    "pg": "8.23.0",
+    "pino": "10.3.1",
+    "pino-http": "11.0.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "1.4.10",
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/pg": "8.23.1",
+    "pino-pretty": "13.1.3",
+    "prisma": "7.10.0"
+  }
+}
