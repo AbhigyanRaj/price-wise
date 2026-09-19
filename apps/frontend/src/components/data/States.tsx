@@ -1,4 +1,4 @@
-import { AlertTriangle, Inbox, SearchX } from "lucide-react";
+import { AlertTriangle, Compass, Inbox, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
@@ -75,6 +75,38 @@ export function ErrorState({
         title={title}
         description={description}
         {...(onRetry ? { action: { label: "Try again", onClick: onRetry } } : {})}
+      />
+    </Shell>
+  );
+}
+
+/**
+ * A route that does not exist.
+ *
+ * Lives here with the other three because this file's stated job is the states
+ * every surface owes the user, and a route miss is the fourth. Putting it
+ * anywhere else invites a hand-rolled variant.
+ */
+export function NotFound({
+  path,
+  action,
+  className,
+}: {
+  path?: string | undefined;
+  action?: { label: string; onClick: () => void } | undefined;
+  className?: string | undefined;
+}) {
+  return (
+    <Shell className={className}>
+      <Compass className="h-8 w-8 text-ink-tertiary" aria-hidden="true" />
+      <Body
+        title="There is nothing at this address"
+        description={
+          path
+            ? `We could not find ${path}. It may have been renamed or removed.`
+            : "The page you asked for does not exist."
+        }
+        action={action}
       />
     </Shell>
   );
