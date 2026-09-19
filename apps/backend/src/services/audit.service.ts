@@ -1,4 +1,6 @@
+import type { AuditQuery } from "@pricewise/shared";
 import * as auditRepo from "../repositories/audit.repository";
+import * as auditQueryRepo from "../repositories/audit.query.repository";
 import type { JsonValue } from "../lib/json";
 import { logger } from "../lib/logger";
 
@@ -28,3 +30,21 @@ export async function record(entry: AuditEntry): Promise<void> {
 
 // There is deliberately no update() and no delete() here, and no route exposes
 // one. Immutability is enforced by absence (FR-AUD-3).
+
+/**
+ * Reads.
+ *
+ * These exist because the controller was calling the query repository
+ * directly, which is the one place in the app that broke the
+ * route-controller-service-repository rule. Two thin functions restore it, and
+ * a thin pass-through is the honest shape when a read genuinely has no
+ * business logic: the alternative is a layer that lies about doing work.
+ */
+export function listAuditLogs(orgId: string, q: AuditQuery) {
+  return auditQueryRepo.findMany(orgId, q);
+}
+
+export async function listActions(orgId: string): Promise<string[]> {
+  const rows = await auditQueryRepo.distinctActions(orgId);
+  return rows.map((r) => r.action);
+}

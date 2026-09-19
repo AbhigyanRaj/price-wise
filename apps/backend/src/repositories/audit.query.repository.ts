@@ -12,6 +12,19 @@ export async function findMany(orgId: string, q: AuditQuery) {
     ...(q.entityId ? { entityId: q.entityId } : {}),
     ...(q.userId ? { userId: q.userId } : {}),
     ...(q.action ? { action: q.action } : {}),
+    // A single top-level OR, so it cannot collide with the action equality
+    // filter above when both are supplied.
+    ...(q.search
+      ? {
+          OR: [
+            { action: { contains: q.search, mode: "insensitive" as const } },
+            { entityType: { contains: q.search, mode: "insensitive" as const } },
+            // Prefix rather than contains: an id is looked up by its start,
+            // and a contains on a uuid column cannot use the index.
+            { entityId: { startsWith: q.search } },
+          ],
+        }
+      : {}),
     ...(q.from || q.to
       ? {
           createdAt: {

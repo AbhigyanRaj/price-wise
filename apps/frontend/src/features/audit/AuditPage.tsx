@@ -1,17 +1,27 @@
 import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { api, queryString, type Paged } from "@/lib/api";
-import { EmptyFirstRun, ErrorState } from "@/components/data/States";
+import { EmptyFirstRun, EmptyNoMatches, ErrorState } from "@/components/data/States";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { absoluteTime, relativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { useDebounced } from "@/hooks/useDebounced";
 import type { AuditLogDto } from "@/lib/types";
 
 export function AuditPage() {
   const [action, setAction] = useState("");
+  const [search, setSearch] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  // The input keeps its own immediate state; only the settled copy reaches the
+  // query key, so typing stays responsive and does not fire a request per
+  // keystroke.
+  const settledSearch = useDebounced(search);
+  const hasFilters = action !== "" || settledSearch !== "" || from !== "" || to !== "";
 
   const { data: actions } = useQuery({
     queryKey: ["audit", "actions"],
@@ -21,11 +31,21 @@ export function AuditPage() {
 
   const { data, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ["audit", { action }],
+      queryKey: ["audit", { action, search: settledSearch, from, to }],
       initialPageParam: undefined as string | undefined,
       queryFn: ({ pageParam, signal }) =>
         api.paged<AuditLogDto>(
-          `/audit-logs${queryString({ action, limit: 25, cursor: pageParam })}`,
+          `/audit-logs${queryString({
+            action,
+            search: settledSearch,
+            // <input type="date"> yields YYYY-MM-DD; the API wants an ISO
+            // datetime. Widening to the whole day at both ends is what makes
+            // "from today to today" mean today.
+            from: from ? `${from}T00:00:00.000Z` : "",
+            to: to ? `${to}T23:59:59.999Z` : "",
+            limit: 25,
+            cursor: pageParam,
+          })}`,
           signal,
         ),
       getNextPageParam: (last: Paged<AuditLogDto>) => last.pagination.nextCursor ?? undefined,
@@ -42,7 +62,23 @@ export function AuditPage() {
         </p>
       </header>
 
-      <div className="mb-3">
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-tertiary"
+            aria-hidden="true"
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            // Says what it actually matches. The trail has no relation to the
+            // user table, so promising a name search would be a lie.
+            placeholder="Search action, entity or id"
+            aria-label="Search the audit trail"
+            className="h-8 w-64 rounded-md border border-line bg-surface pl-8 pr-2 text-[13px] transition-colors duration-100 hover:border-line-strong"
+          />
+        </div>
+
         <select
           value={action}
           onChange={(e) => setAction(e.target.value)}
@@ -56,6 +92,40 @@ export function AuditPage() {
             </option>
           ))}
         </select>
+
+        <label className="flex items-center gap-1.5 text-[12px] text-ink-secondary">
+          From
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="h-8 rounded-md border border-line bg-surface px-2 text-[13px]"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-[12px] text-ink-secondary">
+          To
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="h-8 rounded-md border border-line bg-surface px-2 text-[13px]"
+          />
+        </label>
+
+        {hasFilters && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setAction("");
+              setSearch("");
+              setFrom("");
+              setTo("");
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-md border border-line bg-surface">
@@ -76,10 +146,29 @@ export function AuditPage() {
           />
         )}
 
-        {!isPending && !isError && entries.length === 0 && (
+        {/* Two states, because they are two situations. An empty trail needs
+            to explain what will fill it; an over-filtered one needs a way back
+            out. One generic "No results" serves neither. */}
+        {!isPending && !isError && entries.length === 0 && !hasFilters && (
           <EmptyFirstRun
             title="Nothing recorded yet"
             description="Approving, rejecting or changing settings will appear here."
+          />
+        )}
+
+        {!isPending && !isError && entries.length === 0 && hasFilters && (
+          <EmptyNoMatches
+            title="No activity matches these filters"
+            description="Try a wider date range, or clear the filters to see the whole trail."
+            action={{
+              label: "Clear filters",
+              onClick: () => {
+                setAction("");
+                setSearch("");
+                setFrom("");
+                setTo("");
+              },
+            }}
           />
         )}
 

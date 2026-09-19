@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { AuditQuery } from "@pricewise/shared";
-import * as auditQueryRepo from "../repositories/audit.query.repository";
+import * as auditService from "../services/audit.service";
 import { ok, okPaged } from "../lib/envelope";
 import { requireCtx } from "../lib/requireCtx";
 
@@ -8,7 +8,7 @@ export async function list(req: Request, res: Response, next: NextFunction) {
   try {
     const { orgId } = requireCtx(req);
     const q = req.validated?.query as AuditQuery;
-    const { items, nextCursor, hasMore } = await auditQueryRepo.findMany(orgId, q);
+    const { items, nextCursor, hasMore } = await auditService.listAuditLogs(orgId, q);
 
     res.json(
       okPaged(
@@ -33,8 +33,7 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 export async function actions(req: Request, res: Response, next: NextFunction) {
   try {
     const { orgId } = requireCtx(req);
-    const rows = await auditQueryRepo.distinctActions(orgId);
-    res.json(ok(rows.map((r) => r.action)));
+    res.json(ok(await auditService.listActions(orgId)));
   } catch (err) {
     next(err);
   }
