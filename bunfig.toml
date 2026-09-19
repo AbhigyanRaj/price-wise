@@ -1,0 +1,6 @@
+[install]
+# Save exact versions, never carets. Phase 0.0 lost time to this: `prisma` was
+# installed unpinned and resolved to 8.0.0-rc.15, a release candidate, because
+# its npm `latest` dist-tag points there while @prisma/client's points at 7.10.0.
+# Exact-by-default makes that class of silent drift impossible.
+exact = true

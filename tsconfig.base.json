@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+
+    "strict": true,
+
+    // Forces `arr[0]` to be treated as possibly undefined. Directly relevant when
+    // parsing LLM output arrays, where an empty array is a real runtime case.
+    "noUncheckedIndexedAccess": true,
+
+    // Stops `{ foo?: string }` silently accepting `{ foo: undefined }`, which
+    // matters for Prisma update payloads where the two mean different things.
+    "exactOptionalPropertyTypes": true,
+
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true
+  }
+}
