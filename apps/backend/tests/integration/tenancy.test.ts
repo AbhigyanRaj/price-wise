@@ -102,6 +102,16 @@ describe("tenant isolation, Product", () => {
 
 describe("tenant isolation, Organization settings", () => {
   test("each org reads only its own settings", async () => {
+    // Read A's threshold BEFORE touching B, rather than asserting a literal.
+    // The property under test is "B's write did not reach A", which is true
+    // whatever the schema default happens to be. Hardcoding the default made
+    // this test fail the day the default was recalibrated, which told us
+    // nothing about tenant isolation.
+    const beforeRes = await api(server, "GET", "/org/settings", undefined, orgA.adminJar);
+    const before = (await beforeRes.json()) as { data: { confidenceThreshold: number } };
+    const aThresholdBefore = before.data.confidenceThreshold;
+    expect(aThresholdBefore).not.toBe(0.75);
+
     await api(server, "PATCH", "/org/settings", { confidenceThreshold: 0.75 }, orgB.adminJar);
 
     const aRes = await api(server, "GET", "/org/settings", undefined, orgA.adminJar);
@@ -112,7 +122,7 @@ describe("tenant isolation, Organization settings", () => {
     expect(a.data.name).toBe("Northwind Retail");
     expect(b.data.name).toBe("Meridian Goods");
     // Org B's change must not have touched Org A.
-    expect(a.data.confidenceThreshold).toBe(0.85);
+    expect(a.data.confidenceThreshold).toBe(aThresholdBefore);
     expect(b.data.confidenceThreshold).toBe(0.75);
   });
 
