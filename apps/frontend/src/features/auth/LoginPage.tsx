@@ -1,15 +1,14 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Navigate, useLocation, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { LoginSchema, type LoginInput } from "@pricewise/shared";
-import { api, ApiError } from "@/lib/api";
-import { useAuth, SESSION_QUERY_KEY } from "./useAuth";
+import { ApiError } from "@/lib/api";
+import { useAuth } from "./useAuth";
+import { useLogin } from "./api";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/form/Field";
 import { FullPageSpinner } from "@/components/data/States";
-import { PipelinePreview } from "./PipelinePreview";
-import type { SessionDto } from "@/lib/types";
+import { AuthLayout } from "./AuthLayout";
 
 const DEMO_ACCOUNTS = [
   { email: "admin@northwind.test", org: "Northwind Retail", role: "Admin" },
@@ -22,7 +21,6 @@ const DEMO_PASSWORD = "Pricewise2026!";
 
 export function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,16 +32,14 @@ export function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  const login = useMutation({
-    mutationFn: (values: LoginInput) => api.post<SessionDto>("/auth/login", values),
-    onSuccess(session) {
-      // Seed the cache directly rather than refetching. The response already
-      // contains the session, so a second round trip would only add latency.
-      queryClient.setQueryData(SESSION_QUERY_KEY, session);
+  const login = useLogin();
+
+  const handlers = {
+    onSuccess() {
       const from = (location.state as { from?: string } | null)?.from;
       navigate(from ?? "/", { replace: true });
     },
-    onError(error) {
+    onError(error: unknown) {
       if (!(error instanceof ApiError)) return;
 
       if (error.code === "RATE_LIMITED") {
@@ -58,7 +54,7 @@ export function LoginPage() {
       // an email is registered.
       form.setError("root", { message: error.message });
     },
-  });
+  };
 
   if (isLoading) return <FullPageSpinner />;
   if (isAuthenticated) return <Navigate to="/" replace />;
@@ -70,58 +66,28 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
-      {/* Left: a product artefact, not a tagline. Showing the thing the app
-          actually does beats asserting that it does it. */}
-      <aside className="relative hidden overflow-hidden border-r border-line bg-surface lg:block">
-        <div
-          aria-hidden="true"
-          className="grain absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(48rem 32rem at 20% 0%, var(--brand-wash), transparent 70%)",
-          }}
-        />
-        <div className="relative flex h-full flex-col justify-center px-12 py-16">
-          <p className="mb-2 font-mono text-[11px] uppercase tracking-widest text-ink-tertiary">
-            Dynamic pricing intelligence
+    <AuthLayout
+      title="Sign in"
+      subtitle="Use one of the demo accounts below, or your own credentials."
+      footer={
+        <>
+          <p>
+            No workspace yet?{" "}
+            <Link to="/signup" className="text-acc-t2 underline-offset-2 hover:underline">
+              Create one
+            </Link>
           </p>
-          <h1 className="mb-2 max-w-sm text-[2rem] leading-[1.15] tracking-[-0.032em]">
-            Five agents. One price. Your decision.
-          </h1>
-          <p className="mb-10 max-w-sm text-sm text-ink-secondary">
-            Specialists analyse the market, your costs and demand. You approve, override or reject.
-            Nothing reaches the storefront without a decision.
+          <p className="mt-1">
+            Have an invite code?{" "}
+            <Link to="/join" className="text-acc-t2 underline-offset-2 hover:underline">
+              Join a workspace
+            </Link>
           </p>
-          <PipelinePreview />
-        </div>
-      </aside>
-
-      <main className="relative flex items-center justify-center px-6 py-12">
-        <div
-          aria-hidden="true"
-          className="grain absolute inset-0 lg:hidden"
-          style={{
-            backgroundImage:
-              "radial-gradient(32rem 24rem at 50% 0%, var(--brand-wash), transparent 70%)",
-          }}
-        />
-
-        <div className="relative w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-brand text-xs font-bold text-brand-ink">
-              P
-            </span>
-            <span className="text-[1.3rem] font-semibold tracking-[-0.02em]">Pricewise</span>
-          </div>
-
-          <h2 className="mb-1">Sign in</h2>
-          <p className="mb-6 text-[13px] text-ink-secondary">
-            Use one of the demo accounts below, or your own credentials.
-          </p>
-
+        </>
+      }
+    >
           <form
-            onSubmit={form.handleSubmit((values) => login.mutate(values))}
+            onSubmit={form.handleSubmit((values) => login.mutate(values, handlers))}
             className="space-y-4"
             noValidate
           >
@@ -183,12 +149,10 @@ export function LoginPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 font-mono text-[11px] text-ink-tertiary">
+            <p className="mt-2 font-mono text-[11px] text-t4">
               password: {DEMO_PASSWORD}
             </p>
           </div>
-        </div>
-      </main>
-    </div>
+    </AuthLayout>
   );
 }

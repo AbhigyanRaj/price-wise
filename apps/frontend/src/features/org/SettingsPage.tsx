@@ -219,14 +219,29 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
             <p className="text-[12px] text-ink-secondary">Code for {created.email}</p>
             <p className="font-mono text-sm tracking-widest text-ink">{created.code}</p>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => void navigator.clipboard.writeText(created.code)}
-            aria-label="Copy invite code"
-          >
-            <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void navigator.clipboard.writeText(created.code)}
+              aria-label="Copy invite code"
+            >
+              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+            </Button>
+            {/* The code alone leaves the recipient to work out where it goes.
+                The link lands them on the redemption form with it filled in. */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                void navigator.clipboard.writeText(
+                  `${window.location.origin}/join?code=${created.code}`,
+                )
+              }
+            >
+              Copy invite link
+            </Button>
+          </div>
         </div>
       )}
 

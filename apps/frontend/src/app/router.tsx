@@ -4,6 +4,8 @@ import { RequireAuth } from "@/components/layout/RequireAuth";
 import { RouteError } from "./RouteError";
 import { NotFoundPage } from "./NotFoundPage";
 import { LoginPage } from "@/features/auth/LoginPage";
+import { SignupPage } from "@/features/auth/SignupPage";
+import { InviteSignupPage } from "@/features/auth/InviteSignupPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CatalogPage } from "@/features/products/CatalogPage";
 import { ProductDetailPage } from "@/features/products/ProductDetailPage";
@@ -18,6 +20,8 @@ import { SettingsPage } from "@/features/org/SettingsPage";
  */
 export const routes: RouteObject[] = [
   { path: "/login", element: <LoginPage />, errorElement: <RouteError /> },
+  { path: "/signup", element: <SignupPage />, errorElement: <RouteError /> },
+  { path: "/join", element: <InviteSignupPage />, errorElement: <RouteError /> },
   {
     path: "/",
     element: (
