@@ -1,8 +1,6 @@
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 // Prisma 7 moved the datasource URL out of schema.prisma into this file.
-// `env()` throws on a missing variable, so a bad setup fails at command time
-// naming the variable rather than as an opaque connection error.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
@@ -22,7 +20,17 @@ export default defineConfig({
     // through, matching how src/lib/env.ts normalises it.
     //
     // Not a rule R6 violation: the lint rule scopes to apps/backend/src.
-    url: process.env.DIRECT_URL || env("DATABASE_URL"),
+    //
+    // The placeholder is load-bearing. `env()` throws on a missing variable,
+    // and this config is evaluated for EVERY prisma command including
+    // `generate`, which needs no database at all. That made `bun install &&
+    // bun run db:generate` impossible on a fresh clone and broke CI on its
+    // first run. Any command that actually connects still fails, and it fails
+    // naming the variable, because that is the host it will try to reach.
+    url:
+      process.env.DIRECT_URL ||
+      process.env.DATABASE_URL ||
+      "postgresql://user:pass@set-DATABASE_URL-before-connecting:5432/db",
   },
   migrations: {
     path: "prisma/migrations",
