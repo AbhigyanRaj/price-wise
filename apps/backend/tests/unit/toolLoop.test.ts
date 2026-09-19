@@ -61,6 +61,7 @@ const toolCallLog: { name: string; args: unknown }[] = [];
 
 const fastTool = defineTool({
   name: "get_competitor_prices",
+  source: { label: "CompetitorPrice table, synthetic scrape feed", kind: "internal_db" as const },
   description: "test tool",
   parameters: { type: "object", properties: { lookbackDays: { type: "number" } }, required: ["lookbackDays"] },
   argsSchema: z.object({ lookbackDays: z.number() }),
@@ -72,6 +73,7 @@ const fastTool = defineTool({
 
 const slowTool = defineTool({
   name: "get_price_history",
+  source: { label: "CompetitorPrice table, bucketed weekly", kind: "internal_db" as const },
   description: "test tool",
   parameters: { type: "object", properties: {}, required: [] },
   argsSchema: z.object({}),
@@ -84,6 +86,7 @@ const slowTool = defineTool({
 
 const throwingTool = defineTool({
   name: "broken_tool",
+  source: { label: "A source that is down", kind: "internal_db" as const },
   description: "always fails",
   parameters: { type: "object", properties: {}, required: [] },
   argsSchema: z.object({}),
@@ -293,5 +296,47 @@ describe("retry and timeout", () => {
 
     await expect(runAgent(opts())).rejects.toThrow();
     expect(callCount).toBe(1);
+  });
+});
+
+describe("tool provenance is recorded", () => {
+  test("a successful call records what came back and where it came from", async () => {
+    // The loop calls the model, gets a tool request, runs the tool, then calls
+    // the model again with the result. Two scripted responses, not one.
+    scripted = [
+      {
+        kind: "tools",
+        calls: [
+          { id: "c1", name: "get_competitor_prices", args: '{"lookbackDays":7}' },
+        ],
+      },
+      { kind: "text", content: '{"answer":"done","confidence":0.9}' },
+    ];
+
+    const result = await runAgent(opts([fastTool]));
+
+    const call = result.toolCalls.find((c) => c.name === "get_competitor_prices");
+    expect(call).toBeDefined();
+    // The assignment asks the interface to show which source backed a claim.
+    // That is only possible if the source travels with the call.
+    expect(call?.source?.label).toBe("CompetitorPrice table, synthetic scrape feed");
+    expect(call?.result).toEqual({ available: true, median: 289.99 });
+    expect(call?.failed).toBeUndefined();
+  });
+
+  test("a failed call records the reason rather than vanishing", async () => {
+    scripted = [
+      { kind: "tools", calls: [{ id: "c1", name: "broken_tool", args: "{}" }] },
+      { kind: "text", content: '{"answer":"degraded","confidence":0.4}' },
+    ];
+
+    const result = await runAgent(opts([throwingTool]));
+
+    const call = result.toolCalls.find((c) => c.name === "broken_tool");
+    expect(call?.failed).toBe(true);
+    // "No data in that window" and "the tool threw" are different situations
+    // and used to look identical downstream.
+    expect(JSON.stringify(call?.result)).toContain("upstream data source is down");
+    expect(call?.source?.label).toBe("A source that is down");
   });
 });

@@ -30,6 +30,7 @@ const CompetitorArgs = z.object({ lookbackDays: z.number().int().min(1).max(90) 
 
 export const getCompetitorPrices: ToolDefinition<z.infer<typeof CompetitorArgs>> = {
   name: "get_competitor_prices",
+  source: { label: "CompetitorPrice table, synthetic scrape feed", kind: "internal_db" },
   description:
     "Fetch recent competitor prices for the product under analysis. Returns each " +
     "competitor's latest price, the age of that observation in days, and summary " +
@@ -97,6 +98,7 @@ const HistoryArgs = z.object({ days: z.number().int().min(7).max(90) });
 
 export const getPriceHistory: ToolDefinition<z.infer<typeof HistoryArgs>> = {
   name: "get_price_history",
+  source: { label: "CompetitorPrice table, bucketed weekly", kind: "internal_db" },
   description:
     "Fetch the competitor price series over time, bucketed by week, so a trend " +
     "direction can be judged rather than a single snapshot. Call this only when " +
@@ -145,6 +147,7 @@ const InventoryArgs = z.object({});
 
 export const getInventoryAndCost: ToolDefinition<z.infer<typeof InventoryArgs>> = {
   name: "get_inventory_and_cost",
+  source: { label: "Product table, cost and stock of record", kind: "internal_db" },
   description:
     "Fetch stock level, unit cost, the configured margin floor, and the resulting " +
     "absolute floor price for the product under analysis. The floor price is " +
@@ -185,6 +188,7 @@ const DemandArgs = z.object({ days: z.number().int().min(7).max(90) });
 
 export const getDemandTrends: ToolDefinition<z.infer<typeof DemandArgs>> = {
   name: "get_demand_trends",
+  source: { label: "DemandSignal table, seasonality and velocity", kind: "internal_db" },
   description:
     "Fetch demand signals for the product: sales velocity, a seasonal index, and " +
     "the category's elasticity anchor. Call this to ground an elasticity estimate " +

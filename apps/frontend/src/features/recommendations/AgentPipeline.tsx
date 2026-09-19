@@ -5,6 +5,7 @@ import { AGENT_DISPLAY_NAMES, type AgentNameValue } from "@pricewise/shared";
 import { cn } from "@/lib/cn";
 import { duration } from "@/lib/format";
 import { ConfidenceBadge } from "@/components/data/Metrics";
+import { ToolCallList } from "@/components/data/ToolCallList";
 import { PIPELINE_ORDER, WAVE_ONE, type AgentProgress } from "./useAgentStream";
 
 /** Ticks while an agent is running so the elapsed time is live rather than
@@ -155,23 +156,12 @@ function AgentCard({
 
       {expanded && hasDetail && (
         <div className="space-y-2 border-t border-line px-3 py-2">
-          {progress.toolCalls.length > 0 && (
-            <div>
-              <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ink-tertiary">
-                Tools called
-              </p>
-              <ul className="space-y-0.5">
-                {progress.toolCalls.map((call, i) => (
-                  <li key={i} className="font-mono text-[11px] text-ink-secondary">
-                    {/* The arguments, not just the name. Showing what the model
-                        actually asked for is the point of FR-EXP-3. */}
-                    {call.name}({JSON.stringify(call.args)})
-                    <span className="ml-2 text-ink-tertiary">{call.durationMs}ms</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div>
+            {/* The arguments and the source, not just the name. What the model
+                actually asked for, and what answered it. */}
+            <p className="eyebrow mb-1.5">Evidence</p>
+            <ToolCallList calls={progress.toolCalls} />
+          </div>
 
           <div>
             <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ink-tertiary">

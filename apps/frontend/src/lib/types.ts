@@ -99,10 +99,19 @@ export interface RecommendationDto {
   } | null;
 }
 
+export interface ToolSource {
+  label: string;
+  kind: "internal_db" | "mock_external_api" | "computed";
+}
+
 export interface ToolCallRecord {
   name: string;
   args: unknown;
   durationMs: number;
+  /** What the tool returned, truncated server-side. Optional because runs
+   *  persisted before provenance was captured do not carry it. */
+  result?: unknown;
+  source?: ToolSource;
   failed?: boolean;
 }
 

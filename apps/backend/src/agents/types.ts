@@ -17,10 +17,22 @@ export interface ToolContext {
  * type-safe while letting a heterogeneous list live in one array, without
  * casts through `never` or `any`.
  */
+/** Where a tool's data actually comes from.
+ *
+ *  Declared on the tool rather than looked up in the UI, because only the tool
+ *  knows. A lookup table in a component drifts the moment a tool changes what
+ *  it reads, and the assignment asks the interface to show which source backed
+ *  each claim. */
+export interface ToolSource {
+  label: string;
+  kind: "internal_db" | "mock_external_api" | "computed";
+}
+
 export interface RunnableTool {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
+  source: ToolSource;
   parseArgs: (raw: unknown) => unknown;
   execute: (args: unknown, ctx: ToolContext) => Promise<JsonValue>;
 }
@@ -35,6 +47,7 @@ export interface ToolDefinition<TArgs = never> {
   parameters: Record<string, unknown>;
   /** Zod, for validating what actually comes back. */
   argsSchema: ZodType<TArgs>;
+  source: ToolSource;
   execute: (args: TArgs, ctx: ToolContext) => Promise<JsonValue>;
 }
 
@@ -43,6 +56,7 @@ export function defineTool<TArgs>(def: ToolDefinition<TArgs>): RunnableTool {
     name: def.name,
     description: def.description,
     parameters: def.parameters,
+    source: def.source,
     parseArgs: (raw) => def.argsSchema.parse(raw),
     execute: (args, ctx) => def.execute(args as TArgs, ctx),
   };
@@ -52,6 +66,10 @@ export interface ToolCallRecord {
   name: string;
   args: JsonValue;
   durationMs: number;
+  /** What came back, truncated. Persisted so the explainability view can show
+   *  the evidence rather than only the question that was asked. */
+  result?: JsonValue;
+  source?: ToolSource;
   failed?: boolean;
 }
 

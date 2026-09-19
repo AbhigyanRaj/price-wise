@@ -4,7 +4,7 @@ import type { AgentNameValue } from "@pricewise/shared";
 import { env } from "../lib/env";
 import { logger } from "../lib/logger";
 import { AppError } from "../lib/errors";
-import type { JsonValue } from "../lib/json";
+import { truncateForAudit, type JsonValue } from "../lib/json";
 import { cachedCompletion } from "./cache";
 import type { RunAgentResult, RunnableTool, ToolCallRecord, ToolContext } from "./types";
 
@@ -135,6 +135,10 @@ export async function runAgent<TOut>(opts: RunAgentOptions<TOut>): Promise<RunAg
             name: tool.name,
             args: args as JsonValue,
             durationMs: Date.now() - t0,
+            // Bounded: these rows are kept forever and result size is partly
+            // model-influenced.
+            result: truncateForAudit(result),
+            source: tool.source,
           });
           return { id: call.id, content: JSON.stringify(result) };
         } catch (err) {
@@ -146,7 +150,16 @@ export async function runAgent<TOut>(opts: RunAgentOptions<TOut>): Promise<RunAg
             { agent: opts.agentName, tool: call.function.name, err },
             "tool call failed",
           );
-          toolCalls.push({ name: tool.name, args: null, durationMs: Date.now() - t0, failed: true });
+          toolCalls.push({
+            name: tool.name,
+            args: null,
+            durationMs: Date.now() - t0,
+            // The reason is recorded too. "No competitor data in that window"
+            // and "the tool threw" look identical downstream otherwise.
+            result: { available: false, error: String(err) },
+            source: tool.source,
+            failed: true,
+          });
           return {
             id: call.id,
             content: JSON.stringify({ error: String(err), available: false }),

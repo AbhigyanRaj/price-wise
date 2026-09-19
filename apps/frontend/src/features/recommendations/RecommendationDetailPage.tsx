@@ -4,6 +4,7 @@ import { AGENT_DISPLAY_NAMES } from "@pricewise/shared";
 import { ArrowLeft, Check, ChevronDown, Pencil, X } from "lucide-react";
 import { ConfidenceBadge, DeltaChip, Money, StatusBadge } from "@/components/data/Metrics";
 import { ConfidenceWaterfall, FactorWeights } from "@/components/charts/ConfidenceWaterfall";
+import { SourcesSummary, ToolCallList } from "@/components/data/ToolCallList";
 import { ErrorState, FullPageSpinner } from "@/components/data/States";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -218,6 +219,11 @@ export function RecommendationDetailPage() {
         </div>
 
         <div className="space-y-5">
+          <section className="rounded-md border border-line bg-surface p-4">
+            <h3 className="mb-3">Where this came from</h3>
+            <SourcesSummary runs={rec.agentRuns} />
+          </section>
+
           {breakdown && (
             <section className="rounded-md border border-line bg-surface p-4">
               <h3 className="mb-3">How confidence was assembled</h3>
@@ -319,28 +325,21 @@ function AgentRunRow({ run }: { run: AgentRunDto }) {
         <div className="space-y-2 bg-canvas px-4 py-3">
           {run.error && <p className="text-[12px] text-down">{run.error}</p>}
 
-          {run.toolCalls.length > 0 && (
-            <div>
-              <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ink-tertiary">
-                Tools called
-              </p>
-              {run.toolCalls.map((call, i) => (
-                <p key={i} className="font-mono text-[11px] text-ink-secondary">
-                  {call.name}({JSON.stringify(call.args)})
-                  <span className="ml-2 text-ink-tertiary">{call.durationMs}ms</span>
-                </p>
-              ))}
-            </div>
-          )}
-
           <div>
-            <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ink-tertiary">
-              Output
-            </p>
-            <pre className="max-h-56 overflow-auto rounded-sm border border-line p-2 font-mono text-[11px] leading-relaxed text-ink-secondary">
+            <p className="eyebrow mb-1.5">Evidence</p>
+            <ToolCallList calls={run.toolCalls} />
+          </div>
+
+          <details>
+            <summary className="eyebrow cursor-pointer">Raw agent output</summary>
+            <pre
+              tabIndex={0}
+              aria-label="Raw agent output"
+              className="mt-1 max-h-56 overflow-auto rounded-sm border border-line p-2 font-mono text-[11px] leading-relaxed text-ink-secondary"
+            >
               {JSON.stringify(run.output, null, 2)}
             </pre>
-          </div>
+          </details>
 
           <p className="font-mono text-[10px] text-ink-tertiary">
             {run.model} · {run.promptTokens} + {run.completionTokens} tokens
