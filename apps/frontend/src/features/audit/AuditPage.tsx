@@ -57,7 +57,7 @@ export function AuditPage() {
     <div className="p-6">
       <header className="mb-5">
         <h1>Audit trail</h1>
-        <p className="mt-0.5 text-sm text-ink-secondary">
+        <p className="mt-0.5 text-sm text-t3">
           Every state change, who caused it, and what it changed. Append only.
         </p>
       </header>
@@ -65,7 +65,7 @@ export function AuditPage() {
       <div className="mb-3 flex flex-wrap items-end gap-2">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-tertiary"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-t4"
             aria-hidden="true"
           />
           <input
@@ -75,7 +75,7 @@ export function AuditPage() {
             // user table, so promising a name search would be a lie.
             placeholder="Search action, entity or id"
             aria-label="Search the audit trail"
-            className="h-8 w-64 rounded-md border border-line bg-surface pl-8 pr-2 text-[13px] transition-colors duration-100 hover:border-line-strong"
+            className="h-8 w-64 rounded-md border border-line bg-panel pl-8 pr-2 text-[13px] transition-colors duration-100 hover:border-line3"
           />
         </div>
 
@@ -83,7 +83,7 @@ export function AuditPage() {
           value={action}
           onChange={(e) => setAction(e.target.value)}
           aria-label="Filter by action"
-          className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] transition-colors duration-100 hover:border-line-strong"
+          className="h-8 rounded-md border border-line bg-panel px-2 text-[13px] transition-colors duration-100 hover:border-line3"
         >
           <option value="">All actions</option>
           {(actions ?? []).map((a) => (
@@ -93,22 +93,22 @@ export function AuditPage() {
           ))}
         </select>
 
-        <label className="flex items-center gap-1.5 text-[12px] text-ink-secondary">
+        <label className="flex items-center gap-1.5 text-[12px] text-t3">
           From
           <input
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="h-8 rounded-md border border-line bg-surface px-2 text-[13px]"
+            className="h-8 rounded-md border border-line bg-panel px-2 text-[13px]"
           />
         </label>
-        <label className="flex items-center gap-1.5 text-[12px] text-ink-secondary">
+        <label className="flex items-center gap-1.5 text-[12px] text-t3">
           To
           <input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="h-8 rounded-md border border-line bg-surface px-2 text-[13px]"
+            className="h-8 rounded-md border border-line bg-panel px-2 text-[13px]"
           />
         </label>
 
@@ -128,7 +128,7 @@ export function AuditPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-md border border-line bg-surface">
+      <div className="overflow-hidden rounded-md border border-line bg-panel">
         {isPending && (
           <ul>
             {Array.from({ length: 8 }, (_, i) => (
@@ -202,42 +202,42 @@ function AuditRow({ entry }: { entry: AuditLogDto }) {
         aria-expanded={hasDiff ? open : undefined}
         className={cn(
           "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-100",
-          hasDiff && "hover:bg-surface-hover",
+          hasDiff && "hover:bg-hover",
         )}
       >
-        <span className="font-mono text-[11px] text-ink">{entry.action}</span>
-        <span className="flex-1 truncate text-[13px] text-ink-secondary">
+        <span className="font-mono text-[11px] text-t1">{entry.action}</span>
+        <span className="flex-1 truncate text-[13px] text-t3">
           {entry.entityType}
           {/* A null actor means the system acted, which is how an auto-executed
               price change is distinguished from a human approval. */}
           {entry.userId === null && (
-            <span className="ml-2 rounded-sm bg-brand-wash px-1.5 py-0.5 text-[11px] text-brand">
+            <span className="ml-2 rounded-sm bg-acc-a px-1.5 py-0.5 text-[11px] text-acc-t2">
               System
             </span>
           )}
         </span>
-        <span className="shrink-0 text-xs text-ink-tertiary" title={absoluteTime(entry.createdAt)}>
+        <span className="shrink-0 text-xs text-t4" title={absoluteTime(entry.createdAt)}>
           {relativeTime(entry.createdAt)}
         </span>
         {hasDiff && (
           <ChevronDown
-            className={cn("h-3.5 w-3.5 text-ink-tertiary transition-transform duration-200", open && "rotate-180")}
+            className={cn("h-3.5 w-3.5 text-t4 transition-transform duration-200", open && "rotate-180")}
             aria-hidden="true"
           />
         )}
       </button>
 
       {open && hasDiff && (
-        <div className="grid gap-3 bg-canvas px-4 py-3 sm:grid-cols-2">
+        <div className="grid gap-3 bg-bg px-4 py-3 sm:grid-cols-2">
           <div>
-            <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ink-tertiary">Before</p>
-            <pre className="overflow-auto rounded-sm border border-line p-2 font-mono text-[11px] text-ink-secondary">
+            <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-t4">Before</p>
+            <pre className="overflow-auto rounded-sm border border-line p-2 font-mono text-[11px] text-t3">
               {JSON.stringify(entry.beforeValue, null, 2) ?? "null"}
             </pre>
           </div>
           <div>
-            <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ink-tertiary">After</p>
-            <pre className="overflow-auto rounded-sm border border-line p-2 font-mono text-[11px] text-ink-secondary">
+            <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-t4">After</p>
+            <pre className="overflow-auto rounded-sm border border-line p-2 font-mono text-[11px] text-t3">
               {JSON.stringify(entry.afterValue, null, 2) ?? "null"}
             </pre>
           </div>

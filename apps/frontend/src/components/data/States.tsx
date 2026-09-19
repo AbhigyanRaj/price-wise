@@ -40,7 +40,7 @@ interface EmptyProps {
 export function EmptyFirstRun({ title, description, action, className }: EmptyProps) {
   return (
     <Shell className={className}>
-      <Inbox className="h-8 w-8 text-ink-tertiary" aria-hidden="true" />
+      <Inbox className="h-8 w-8 text-t4" aria-hidden="true" />
       <Body title={title} description={description} action={action} />
     </Shell>
   );
@@ -51,7 +51,7 @@ export function EmptyFirstRun({ title, description, action, className }: EmptyPr
 export function EmptyNoMatches({ title, description, action, className }: EmptyProps) {
   return (
     <Shell className={className}>
-      <SearchX className="h-8 w-8 text-ink-tertiary" aria-hidden="true" />
+      <SearchX className="h-8 w-8 text-t4" aria-hidden="true" />
       <Body title={title} description={description} action={action} />
     </Shell>
   );
@@ -70,7 +70,7 @@ export function ErrorState({
 }) {
   return (
     <Shell className={className}>
-      <AlertTriangle className="h-8 w-8 text-warn" aria-hidden="true" />
+      <AlertTriangle className="h-8 w-8 text-amber" aria-hidden="true" />
       <Body
         title={title}
         description={description}
@@ -98,7 +98,7 @@ export function NotFound({
 }) {
   return (
     <Shell className={className}>
-      <Compass className="h-8 w-8 text-ink-tertiary" aria-hidden="true" />
+      <Compass className="h-8 w-8 text-t4" aria-hidden="true" />
       <Body
         title="There is nothing at this address"
         description={
@@ -130,8 +130,8 @@ function Body({ title, description, action }: Omit<EmptyProps, "className">) {
   return (
     <>
       <div className="max-w-sm space-y-1">
-        <p className="text-sm font-medium text-ink">{title}</p>
-        <p className="text-[13px] text-ink-secondary">{description}</p>
+        <p className="text-sm font-medium text-t1">{title}</p>
+        <p className="text-[13px] text-t3">{description}</p>
       </div>
       {action && (
         <Button size="sm" variant="outline" onClick={action.onClick}>

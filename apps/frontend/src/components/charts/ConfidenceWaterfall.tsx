@@ -53,8 +53,8 @@ export function ConfidenceWaterfall({
           className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
           style={{ bottom: `${threshold * 100}%` }}
         >
-          <div className="h-px flex-1 border-t border-dashed border-ink-tertiary" />
-          <span className="tnum ml-2 shrink-0 font-mono text-[10px] text-ink-tertiary">
+          <div className="h-px flex-1 border-t border-dashed border-t5" />
+          <span className="tnum ml-2 shrink-0 font-mono text-[10px] text-t4">
             threshold {threshold.toFixed(2)}
           </span>
         </div>
@@ -67,7 +67,7 @@ export function ConfidenceWaterfall({
             return (
               <div key={index} className="relative flex min-w-0 flex-1 flex-col justify-end">
                 <span
-                  className="tnum absolute w-full text-center font-mono text-[10px] text-ink-secondary"
+                  className="tnum absolute w-full text-center font-mono text-[10px] text-t3"
                   style={{ bottom: `calc(${offset + height}% + 2px)` }}
                 >
                   {step.kind === "deduction"
@@ -78,9 +78,9 @@ export function ConfidenceWaterfall({
                 <div
                   className={cn(
                     "w-full rounded-sm",
-                    step.kind === "total" && "bg-ink-tertiary",
-                    step.kind === "deduction" && "bg-warn",
-                    step.kind === "final" && (cleared ? "bg-up" : "bg-down"),
+                    step.kind === "total" && "bg-t4",
+                    step.kind === "deduction" && "bg-amber",
+                    step.kind === "final" && (cleared ? "bg-pos" : "bg-neg"),
                   )}
                   style={{ height: `${height}%`, marginBottom: `${offset}%` }}
                 />
@@ -96,7 +96,7 @@ export function ConfidenceWaterfall({
             <span
               className={cn(
                 "truncate",
-                step.kind === "deduction" ? "text-ink-secondary" : "font-medium text-ink",
+                step.kind === "deduction" ? "text-t3" : "font-medium text-t1",
               )}
             >
               {step.label}
@@ -104,9 +104,9 @@ export function ConfidenceWaterfall({
             <span
               className={cn(
                 "tnum shrink-0 font-mono",
-                step.kind === "deduction" && "text-warn",
-                step.kind === "final" && (cleared ? "text-up" : "text-down"),
-                step.kind === "total" && "text-ink-secondary",
+                step.kind === "deduction" && "text-amber",
+                step.kind === "final" && (cleared ? "text-pos" : "text-neg"),
+                step.kind === "total" && "text-t3",
               )}
             >
               {step.kind === "deduction" ? step.amount.toFixed(2) : step.amount.toFixed(2)}
@@ -115,7 +115,7 @@ export function ConfidenceWaterfall({
         ))}
       </ol>
 
-      <p className="mt-2 text-[12px] text-ink-secondary">
+      <p className="mt-2 text-[12px] text-t3">
         {cleared
           ? `Cleared the ${threshold.toFixed(2)} threshold, so this executed automatically.`
           : `Below the ${threshold.toFixed(2)} threshold, so it came to you for a decision.`}
@@ -133,10 +133,10 @@ export function FactorWeights({
   weights: { competitorPressure: number; demandSignal: number; inventoryPosition: number; marginProtection: number };
 }) {
   const factors = [
-    { label: "Competitor pressure", value: weights.competitorPressure, className: "bg-brand" },
-    { label: "Demand signal", value: weights.demandSignal, className: "bg-up" },
-    { label: "Inventory position", value: weights.inventoryPosition, className: "bg-warn" },
-    { label: "Margin protection", value: weights.marginProtection, className: "bg-ink-tertiary" },
+    { label: "Competitor pressure", value: weights.competitorPressure, className: "bg-acc" },
+    { label: "Demand signal", value: weights.demandSignal, className: "bg-pos" },
+    { label: "Inventory position", value: weights.inventoryPosition, className: "bg-amber" },
+    { label: "Margin protection", value: weights.marginProtection, className: "bg-t4" },
   ];
 
   return (
@@ -156,8 +156,8 @@ export function FactorWeights({
         {factors.map((factor) => (
           <li key={factor.label} className="flex items-center gap-2 text-[12px]">
             <span className={cn("h-2 w-2 shrink-0 rounded-sm", factor.className)} aria-hidden="true" />
-            <span className="flex-1 text-ink-secondary">{factor.label}</span>
-            <span className="tnum font-mono text-ink">{(factor.value * 100).toFixed(0)}%</span>
+            <span className="flex-1 text-t3">{factor.label}</span>
+            <span className="tnum font-mono text-t1">{(factor.value * 100).toFixed(0)}%</span>
           </li>
         ))}
       </ul>

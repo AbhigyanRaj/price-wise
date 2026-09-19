@@ -40,7 +40,7 @@ export function RejectDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-canvas/70 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-bg/70 p-4"
       onClick={onClose}
       role="presentation"
     >
@@ -49,12 +49,12 @@ export function RejectDialog({
         aria-modal="true"
         aria-labelledby="reject-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-[var(--shadow-overlay)]"
+        className="w-full max-w-md rounded-lg border border-line bg-panel p-5 shadow-[var(--shadow-overlay)]"
       >
         <h2 id="reject-title" className="mb-1">
           Reject this recommendation
         </h2>
-        <p className="mb-4 text-[13px] text-ink-secondary">
+        <p className="mb-4 text-[13px] text-t3">
           {recommendation.product?.sku} at <Money value={recommendation.recommendedPrice} />. The
           price will not change.
         </p>
@@ -72,11 +72,11 @@ export function RejectDialog({
           aria-invalid={touched && tooShort ? true : undefined}
           aria-describedby="reject-hint"
           placeholder="This SKU is in a bundle promotion launching Thursday."
-          className="w-full resize-none rounded-md border border-line bg-canvas px-2.5 py-2 text-[13px] text-ink placeholder:text-ink-tertiary"
+          className="w-full resize-none rounded-md border border-line bg-bg px-2.5 py-2 text-[13px] text-t1 placeholder:text-t4"
         />
         <p
           id="reject-hint"
-          className={touched && tooShort ? "mt-1 text-[12px] text-down" : "mt-1 text-[12px] text-ink-tertiary"}
+          className={touched && tooShort ? "mt-1 text-[12px] text-neg" : "mt-1 text-[12px] text-t4"}
         >
           {touched && tooShort
             ? `At least ${MIN_REASON} characters. This is resurfaced next time this product is priced.`

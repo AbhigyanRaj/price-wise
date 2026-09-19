@@ -52,14 +52,14 @@ export function PipelinePreview() {
       // Decorative. The real pipeline view announces progress properly; this
       // one would only be noise to a screen reader.
       aria-hidden="true"
-      className="w-full max-w-sm rounded-lg border border-line bg-canvas/60 p-3"
+      className="w-full max-w-sm rounded-lg border border-line bg-bg/60 p-3"
       style={{ animationDuration: `${HOLD_MS}ms` }}
     >
       <div className="mb-2.5 flex items-center justify-between px-1">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-ink-tertiary">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-t4">
           NW-ELEC-0007
         </span>
-        <span className="tnum font-mono text-[10px] text-ink-tertiary">
+        <span className="tnum font-mono text-[10px] text-t4">
           {Math.min(completed, ORDER.length)} of {ORDER.length}
         </span>
       </div>
@@ -74,8 +74,8 @@ export function PipelinePreview() {
               key={agent}
               className={cn(
                 "flex items-center gap-2.5 rounded-md border px-2.5 py-1.5 transition-all duration-200",
-                isRunning && "border-brand/30 bg-brand-wash",
-                isDone && "border-line bg-surface",
+                isRunning && "border-acc-border/30 bg-acc-a",
+                isDone && "border-line bg-panel",
                 !isDone && !isRunning && "border-dashed border-line opacity-60",
                 // The two Wave 1 agents are bracketed together, because that
                 // grouping is the architecture made visible.
@@ -84,11 +84,11 @@ export function PipelinePreview() {
             >
               <span className="grid h-4 w-4 shrink-0 place-items-center">
                 {isDone ? (
-                  <Check className="h-3 w-3 text-up" />
+                  <Check className="h-3 w-3 text-pos" />
                 ) : isRunning ? (
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-acc" />
                 ) : (
-                  <Circle className="h-2.5 w-2.5 text-ink-tertiary" />
+                  <Circle className="h-2.5 w-2.5 text-t4" />
                 )}
               </span>
 
@@ -96,17 +96,17 @@ export function PipelinePreview() {
                 className={cn(
                   "flex-1 text-[12px]",
                   isRunning && !reducedMotion && "shimmer",
-                  isDone ? "text-ink" : "text-ink-secondary",
+                  isDone ? "text-t1" : "text-t3",
                 )}
               >
                 {AGENT_DISPLAY_NAMES[agent]}
               </span>
 
               {index === 0 && (
-                <span className="font-mono text-[10px] text-ink-tertiary">fast</span>
+                <span className="font-mono text-[10px] text-t4">fast</span>
               )}
               {index === 3 && (
-                <span className="font-mono text-[10px] text-ink-tertiary">strong</span>
+                <span className="font-mono text-[10px] text-t4">strong</span>
               )}
             </li>
           );
@@ -119,9 +119,9 @@ export function PipelinePreview() {
           completed >= ORDER.length ? "opacity-100" : "opacity-0",
         )}
       >
-        <span className="text-[12px] text-ink-secondary">Recommended</span>
-        <span className="tnum font-mono text-[12px] font-medium text-ink">
-          $1,194.83 <span className="text-ink-tertiary">to</span> $1,132.08
+        <span className="text-[12px] text-t3">Recommended</span>
+        <span className="tnum font-mono text-[12px] font-medium text-t1">
+          $1,194.83 <span className="text-t4">to</span> $1,132.08
         </span>
       </div>
     </div>

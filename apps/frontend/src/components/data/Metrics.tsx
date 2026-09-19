@@ -23,7 +23,7 @@ export function DeltaChip({
 }) {
   if (Math.abs(fraction) < 0.0005) {
     return (
-      <span className={cn("tnum inline-flex items-center gap-1 text-ink-tertiary", className)}>
+      <span className={cn("tnum inline-flex items-center gap-1 text-t4", className)}>
         <Minus className="h-3 w-3" aria-hidden="true" />
         <span className="sr-only">No change</span>
         0.0%
@@ -38,7 +38,7 @@ export function DeltaChip({
     <span
       className={cn(
         "tnum inline-flex items-center gap-0.5 font-medium",
-        isUp ? "text-up" : "text-down",
+        isUp ? "text-pos" : "text-neg",
         className,
       )}
     >
@@ -68,9 +68,9 @@ export function ConfidenceBadge({
     <span
       className={cn(
         "tnum inline-flex items-center gap-1.5 rounded-sm px-1.5 py-0.5 text-xs font-medium",
-        band === "high" && "bg-up-wash text-up",
-        band === "medium" && "bg-warn-wash text-warn",
-        band === "low" && "bg-down-wash text-down",
+        band === "high" && "bg-pos-a text-pos",
+        band === "medium" && "bg-amber-a text-amber",
+        band === "low" && "bg-neg-a text-neg",
         className,
       )}
       title={`${band} confidence`}
@@ -92,13 +92,13 @@ export function InventoryBadge({
 
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="tnum text-ink">{level.toLocaleString()}</span>
+      <span className="tnum text-t1">{level.toLocaleString()}</span>
       <span
         className={cn(
           "rounded-sm px-1.5 py-0.5 text-[11px] font-medium",
-          status === "LOW" && "bg-warn-wash text-warn",
-          status === "OVERSTOCKED" && "bg-brand-wash text-brand",
-          status === "NORMAL" && "text-ink-tertiary",
+          status === "LOW" && "bg-amber-a text-amber",
+          status === "OVERSTOCKED" && "bg-acc-a text-acc-t2",
+          status === "NORMAL" && "text-t4",
         )}
       >
         {label}
@@ -121,10 +121,10 @@ export function StatusBadge({ status }: { status: RecStatus }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-sm px-1.5 py-0.5 text-[11px] font-medium",
-        status === "PENDING" && "bg-warn-wash text-warn",
-        (status === "APPROVED" || status === "AUTO_EXECUTED") && "bg-up-wash text-up",
-        (status === "REJECTED" || status === "FAILED") && "bg-down-wash text-down",
-        status === "MODIFIED" && "bg-brand-wash text-brand",
+        status === "PENDING" && "bg-amber-a text-amber",
+        (status === "APPROVED" || status === "AUTO_EXECUTED") && "bg-pos-a text-pos",
+        (status === "REJECTED" || status === "FAILED") && "bg-neg-a text-neg",
+        status === "MODIFIED" && "bg-acc-a text-acc-t2",
       )}
     >
       <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -140,7 +140,7 @@ export function MarginCell({ margin, belowFloor }: { margin: number; belowFloor:
     <span
       className={cn(
         "tnum inline-flex items-center gap-1",
-        belowFloor ? "text-warn" : "text-ink-secondary",
+        belowFloor ? "text-amber" : "text-t3",
       )}
     >
       {belowFloor && (

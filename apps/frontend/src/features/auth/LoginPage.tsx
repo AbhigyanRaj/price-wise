@@ -112,7 +112,7 @@ export function LoginPage() {
               // role="alert" so it is announced. Reserved height is not needed
               // here because the message sits above the button, not between
               // fields, so nothing below it shifts.
-              <p role="alert" className="text-[13px] text-down">
+              <p role="alert" className="text-[13px] text-neg">
                 {form.formState.errors.root.message}
               </p>
             )}
@@ -125,7 +125,7 @@ export function LoginPage() {
           <div className="mt-8">
             <div className="mb-3 flex items-center gap-3">
               <span className="h-px flex-1 bg-line" />
-              <span className="text-[11px] uppercase tracking-widest text-ink-tertiary">
+              <span className="text-[11px] uppercase tracking-widest text-t4">
                 Demo accounts
               </span>
               <span className="h-px flex-1 bg-line" />
@@ -140,10 +140,10 @@ export function LoginPage() {
                   key={account.email}
                   type="button"
                   onClick={() => fillDemo(account.email)}
-                  className="flex items-center justify-between rounded-md border border-line px-2.5 py-1.5 text-left transition-colors duration-100 hover:border-line-strong hover:bg-surface-hover"
+                  className="flex items-center justify-between rounded-md border border-line px-2.5 py-1.5 text-left transition-colors duration-100 hover:border-line3 hover:bg-hover"
                 >
-                  <span className="font-mono text-[11px] text-ink-secondary">{account.email}</span>
-                  <span className="text-[11px] text-ink-tertiary">
+                  <span className="font-mono text-[11px] text-t3">{account.email}</span>
+                  <span className="text-[11px] text-t4">
                     {account.org} · {account.role}
                   </span>
                 </button>

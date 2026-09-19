@@ -67,20 +67,20 @@ export function SettingsPage() {
     <div className="max-w-3xl p-6">
       <header className="mb-6">
         <h1>Settings</h1>
-        <p className="mt-0.5 text-sm text-ink-secondary">
+        <p className="mt-0.5 text-sm text-t3">
           The risk posture this organization operates under.
         </p>
       </header>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-md border border-down/40 bg-down-wash px-3 py-2">
-          <p className="text-[13px] text-down">{error}</p>
+        <div role="alert" className="mb-4 rounded-md border border-neg-border/40 bg-neg-a px-3 py-2">
+          <p className="text-[13px] text-neg">{error}</p>
         </div>
       )}
 
-      <section className="mb-5 rounded-md border border-line bg-surface p-4">
+      <section className="mb-5 rounded-md border border-line bg-panel p-4">
         <h3 className="mb-1">Auto-execution threshold</h3>
-        <p className="mb-4 text-[13px] text-ink-secondary">
+        <p className="mb-4 text-[13px] text-t3">
           Recommendations at or above this confidence apply without asking you.
         </p>
 
@@ -100,14 +100,14 @@ export function SettingsPage() {
 
         {/* An abstract number made concrete. "0.90" means nothing on its own;
             "8 of your last 20" is a decision someone can actually make. */}
-        <p className="mt-3 rounded-md bg-canvas px-3 py-2 text-[13px] text-ink-secondary">
+        <p className="mt-3 rounded-md bg-bg px-3 py-2 text-[13px] text-t3">
           Of your last {scores.length} recommendations,{" "}
-          <span className="tnum font-medium text-ink">{wouldAutoExecute}</span> would have executed
+          <span className="tnum font-medium text-t1">{wouldAutoExecute}</span> would have executed
           automatically at this threshold.
         </p>
 
         <h3 className="mb-1 mt-5">Maximum price change</h3>
-        <p className="mb-3 text-[13px] text-ink-secondary">
+        <p className="mb-3 text-[13px] text-t3">
           No single change may move a price by more than this, in either direction.
         </p>
         <div className="flex items-center gap-4">
@@ -130,22 +130,22 @@ export function SettingsPage() {
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
             {save.isPending ? "Saving" : "Save changes"}
           </Button>
-          {saved && <span className="text-[13px] text-up">Saved</span>}
+          {saved && <span className="text-[13px] text-pos">Saved</span>}
         </div>
       </section>
 
       <InviteSection invites={invites ?? []} onChange={() => void refetchInvites()} />
 
-      <section className="rounded-md border border-line bg-surface">
+      <section className="rounded-md border border-line bg-panel">
         <h3 className="border-b border-line px-4 py-2.5 text-sm">Members</h3>
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-line2">
           {(members ?? []).map((member) => (
             <li key={member.id} className="flex items-center justify-between px-4 py-2.5">
               <div>
                 <p className="text-[13px]">{member.name}</p>
-                <p className="font-mono text-[11px] text-ink-tertiary">{member.email}</p>
+                <p className="font-mono text-[11px] text-t4">{member.email}</p>
               </div>
-              <span className="text-[12px] text-ink-secondary">
+              <span className="text-[12px] text-t3">
                 {member.role === "ADMIN" ? "Admin" : "Pricing Analyst"}
               </span>
             </li>
@@ -180,9 +180,9 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
   });
 
   return (
-    <section className="mb-5 rounded-md border border-line bg-surface p-4">
+    <section className="mb-5 rounded-md border border-line bg-panel p-4">
       <h3 className="mb-1">Invite a colleague</h3>
-      <p className="mb-3 text-[13px] text-ink-secondary">
+      <p className="mb-3 text-[13px] text-t3">
         The code is bound to their email address, so an intercepted code is useless without also
         controlling that inbox.
       </p>
@@ -200,7 +200,7 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
           value={role}
           onChange={(e) => setRole(e.target.value)}
           aria-label="Invite role"
-          className="h-8 rounded-md border border-line bg-canvas px-2 text-[13px]"
+          className="h-8 rounded-md border border-line bg-bg px-2 text-[13px]"
         >
           <option value="PRICING_ANALYST">Pricing Analyst</option>
           <option value="ADMIN">Admin</option>
@@ -211,13 +211,13 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
         </Button>
       </div>
 
-      {error && <p className="mt-2 text-[13px] text-down">{error}</p>}
+      {error && <p className="mt-2 text-[13px] text-neg">{error}</p>}
 
       {created && (
-        <div className="mt-3 flex items-center justify-between rounded-md border border-line bg-canvas px-3 py-2">
+        <div className="mt-3 flex items-center justify-between rounded-md border border-line bg-bg px-3 py-2">
           <div>
-            <p className="text-[12px] text-ink-secondary">Code for {created.email}</p>
-            <p className="font-mono text-sm tracking-widest text-ink">{created.code}</p>
+            <p className="text-[12px] text-t3">Code for {created.email}</p>
+            <p className="font-mono text-sm tracking-widest text-t1">{created.code}</p>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -246,10 +246,10 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
       )}
 
       {invites.length > 0 && (
-        <ul className="mt-3 divide-y divide-line border-t border-line">
+        <ul className="mt-3 divide-y divide-line2 border-t border-line">
           {invites.map((invite) => (
             <li key={invite.id} className="flex items-center justify-between py-2">
-              <span className="text-[13px] text-ink-secondary">{invite.email}</span>
+              <span className="text-[13px] text-t3">{invite.email}</span>
               <Button
                 size="sm"
                 variant="ghost"

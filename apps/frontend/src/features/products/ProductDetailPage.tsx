@@ -51,7 +51,7 @@ export function ProductDetailPage() {
     <div className="p-6">
       <Link
         to="/products"
-        className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-ink-secondary transition-colors duration-100 hover:text-ink"
+        className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-t3 transition-colors duration-100 hover:text-t1"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
         Catalog
@@ -59,9 +59,9 @@ export function ProductDetailPage() {
 
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="mb-1 font-mono text-xs text-ink-tertiary">{product.sku}</p>
+          <p className="mb-1 font-mono text-xs text-t4">{product.sku}</p>
           <h1>{product.name}</h1>
-          <p className="mt-1 text-sm text-ink-secondary">{product.category}</p>
+          <p className="mt-1 text-sm text-t3">{product.category}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export function ProductDetailPage() {
             }}
             aria-label="Simulate a market event"
             defaultValue=""
-            className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] transition-colors duration-100 hover:border-line-strong"
+            className="h-8 rounded-md border border-line bg-panel px-2 text-[13px] transition-colors duration-100 hover:border-line3"
           >
             <option value="" disabled>
               Simulate event
@@ -92,25 +92,25 @@ export function ProductDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
         <section className="space-y-4">
-          <div className="rounded-md border border-line bg-surface">
+          <div className="rounded-md border border-line bg-panel">
             <h3 className="border-b border-line px-4 py-2.5 text-sm">Position</h3>
-            <dl className="divide-y divide-line">
+            <dl className="divide-y divide-line2">
               <Row label="Current price">
                 <Money value={product.currentPrice} />
               </Row>
               <Row label="Unit cost">
-                <Money value={product.cost} className="text-ink-secondary" />
+                <Money value={product.cost} className="text-t3" />
               </Row>
               <Row label="Margin">
                 <MarginCell margin={product.margin} belowFloor={product.belowFloor} />
               </Row>
               <Row label="Margin floor">
-                <span className="tnum text-ink-secondary">
+                <span className="tnum text-t3">
                   {percent(product.marginFloorPct, 1)}
                 </span>
               </Row>
               <Row label="Floor price">
-                <span className="tnum font-mono text-ink-secondary">
+                <span className="tnum font-mono text-t3">
                   {money(product.cost / (1 - product.marginFloorPct))}
                 </span>
               </Row>
@@ -120,11 +120,11 @@ export function ProductDetailPage() {
               <Row label="Latest competitor">
                 {competitor && competitorDelta !== null ? (
                   <span className="inline-flex items-center gap-2">
-                    <Money value={competitor.price} className="text-ink-secondary" />
+                    <Money value={competitor.price} className="text-t3" />
                     <DeltaChip fraction={competitorDelta} />
                   </span>
                 ) : (
-                  <span className="text-xs text-ink-tertiary">no data</span>
+                  <span className="text-xs text-t4">no data</span>
                 )}
               </Row>
             </dl>
@@ -134,9 +134,9 @@ export function ProductDetailPage() {
         <section>
           {status === "idle" && !product.pendingRecommendation && (
             <div className="rounded-md border border-dashed border-line px-6 py-12 text-center">
-              <Zap className="mx-auto mb-3 h-7 w-7 text-ink-tertiary" aria-hidden="true" />
+              <Zap className="mx-auto mb-3 h-7 w-7 text-t4" aria-hidden="true" />
               <p className="text-sm font-medium">No recommendation yet</p>
-              <p className="mx-auto mt-1 max-w-xs text-[13px] text-ink-secondary">
+              <p className="mx-auto mt-1 max-w-xs text-[13px] text-t3">
                 Run the five-agent pipeline to analyse this product against the market, your costs
                 and current demand.
               </p>
@@ -144,9 +144,9 @@ export function ProductDetailPage() {
           )}
 
           {status === "idle" && product.pendingRecommendation && (
-            <div className="rounded-md border border-line bg-surface p-4">
+            <div className="rounded-md border border-line bg-panel p-4">
               <p className="text-sm font-medium">A recommendation is waiting</p>
-              <p className="mt-1 text-[13px] text-ink-secondary">
+              <p className="mt-1 text-[13px] text-t3">
                 Generated earlier and pending your decision.
               </p>
               <Button
@@ -171,8 +171,8 @@ export function ProductDetailPage() {
           )}
 
           {streamError && (
-            <div className="mt-3 rounded-md border border-down/40 bg-down-wash p-3">
-              <p className="text-[13px] text-down">{streamError}</p>
+            <div className="mt-3 rounded-md border border-neg-border/40 bg-neg-a p-3">
+              <p className="text-[13px] text-neg">{streamError}</p>
               <Button size="sm" variant="outline" className="mt-2" onClick={handleGenerate}>
                 Try again
               </Button>
@@ -180,7 +180,7 @@ export function ProductDetailPage() {
           )}
 
           {result && (
-            <div className="mt-3 rounded-md border border-line bg-surface p-4">
+            <div className="mt-3 rounded-md border border-line bg-panel p-4">
               <p className="text-sm font-medium">
                 {result.blocked
                   ? "Blocked by a business rule"
@@ -188,7 +188,7 @@ export function ProductDetailPage() {
                     ? "Auto-executed"
                     : "Sent for your approval"}
               </p>
-              <p className="mt-1 text-[13px] text-ink-secondary">
+              <p className="mt-1 text-[13px] text-t3">
                 {result.blocked
                   ? "The rule engine stopped this from executing. It is waiting for a human decision."
                   : result.autoExecuted
@@ -215,7 +215,7 @@ export function ProductDetailPage() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between px-4 py-2">
-      <dt className="text-[13px] text-ink-secondary">{label}</dt>
+      <dt className="text-[13px] text-t3">{label}</dt>
       <dd className="text-[13px]">{children}</dd>
     </div>
   );

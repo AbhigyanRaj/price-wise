@@ -38,7 +38,7 @@ function Forbidden() {
     <div className="grid min-h-[60vh] place-items-center px-6">
       <div className="max-w-sm text-center">
         <h1 className="mb-2">Not available to your role</h1>
-        <p className="text-sm text-ink-secondary">
+        <p className="text-sm text-t3">
           Organization settings are restricted to admins. Ask an admin in your organization if you
           need a threshold or margin floor changed.
         </p>

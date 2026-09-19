@@ -75,13 +75,13 @@ export function CatalogPage() {
       <header className="mb-5 flex items-end justify-between gap-4">
         <div>
           <h1>Catalog</h1>
-          <p className="mt-0.5 text-sm text-ink-secondary">
+          <p className="mt-0.5 text-sm text-t3">
             Every SKU in your organization, with its current market position.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {data && (
-            <span className="tnum text-xs text-ink-tertiary">
+            <span className="tnum text-xs text-t4">
               {data.pagination.totalCount} products
             </span>
           )}
@@ -103,7 +103,7 @@ export function CatalogPage() {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-tertiary"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-t4"
             aria-hidden="true"
           />
           <Input
@@ -144,7 +144,7 @@ export function CatalogPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-md border border-line bg-surface">
+      <div className="overflow-hidden rounded-md border border-line bg-panel">
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-line">
@@ -153,7 +153,7 @@ export function CatalogPage() {
                   key={column.key}
                   scope="col"
                   className={cn(
-                    "h-8 px-3 text-xs font-medium text-ink-tertiary",
+                    "h-8 px-3 text-xs font-medium text-t4",
                     // Numeric headers align right with their cells. A
                     // left-aligned header over a right-aligned column is the
                     // commonest reason a data table reads as crooked.
@@ -166,8 +166,8 @@ export function CatalogPage() {
                       type="button"
                       onClick={() => toggleSort(column.sortBy!)}
                       className={cn(
-                        "inline-flex items-center gap-1 rounded-sm transition-colors duration-100 hover:text-ink",
-                        filters.sortBy === column.sortBy && "text-ink",
+                        "inline-flex items-center gap-1 rounded-sm transition-colors duration-100 hover:text-t1",
+                        filters.sortBy === column.sortBy && "text-t1",
                       )}
                       aria-label={`Sort by ${column.label}`}
                     >
@@ -242,7 +242,7 @@ export function CatalogPage() {
           className="mt-3 flex items-center justify-between text-[13px]"
           aria-label="Catalog pages"
         >
-          <span className="tnum text-ink-tertiary">
+          <span className="tnum text-t4">
             Page {data.pagination.page} of {data.pagination.totalPages}
           </span>
           <div className="flex items-center gap-1">
@@ -312,9 +312,9 @@ function ProductRow({
           onOpen();
         }
       }}
-      className="h-9 cursor-pointer border-b border-line transition-colors duration-100 last:border-0 hover:bg-surface-hover"
+      className="h-9 cursor-pointer border-b border-line transition-colors duration-100 last:border-0 hover:bg-hover"
     >
-      <td className="px-3 font-mono text-xs text-ink-secondary">{product.sku}</td>
+      <td className="px-3 font-mono text-xs text-t3">{product.sku}</td>
       <td className="max-w-0 truncate px-3" title={product.name}>
         {product.name}
       </td>
@@ -327,11 +327,11 @@ function ProductRow({
             className="inline-flex items-center gap-1.5"
             title={`${competitor.competitor} at ${competitor.price}`}
           >
-            <Money value={competitor.price} className="text-ink-secondary" />
+            <Money value={competitor.price} className="text-t3" />
             <DeltaChip fraction={competitorDelta} />
           </span>
         ) : (
-          <span className="text-xs text-ink-tertiary">no data</span>
+          <span className="text-xs text-t4">no data</span>
         )}
       </td>
       <td className="px-3 text-right">
@@ -343,11 +343,11 @@ function ProductRow({
       <td className="px-3">
         {product.pendingRecommendation ? (
           <span className="inline-flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3 text-brand" aria-hidden="true" />
+            <Sparkles className="h-3 w-3 text-acc-t2" aria-hidden="true" />
             <ConfidenceBadge value={product.pendingRecommendation.confidenceScore} />
           </span>
         ) : (
-          <span className="text-xs text-ink-tertiary">none</span>
+          <span className="text-xs text-t4">none</span>
         )}
       </td>
       <td className="px-3 text-right">
@@ -420,7 +420,7 @@ function FilterSelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={label}
-      className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-ink transition-colors duration-100 hover:border-line-strong"
+      className="h-8 rounded-md border border-line bg-panel px-2 text-[13px] text-t1 transition-colors duration-100 hover:border-line3"
     >
       <option value="">{label}: all</option>
       {options.map((option) => (

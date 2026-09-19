@@ -248,32 +248,6 @@
 
   /* Anything that moves in space uses this. Opacity and colour use plain ease. */
   --ease-spatial: cubic-bezier(0.2, 0.8, 0.2, 1);
-
-  /* ---- Compatibility aliases, temporary -----------------------------------
-     The previous palette's semantic names, pointed at the new values. They
-     exist so the app keeps building and stays demoable while the screens are
-     ported one at a time, rather than every screen breaking at once the moment
-     the tokens changed.
-     Delete each alias as the last screen using it is ported. When this block
-     is empty, the port is finished.
-  ------------------------------------------------------------------------- */
-  --color-canvas: var(--bg);
-  --color-surface: var(--panel);
-  --color-surface-hover: var(--hover);
-  --color-surface-active: var(--sel);
-  --color-ink: var(--t0);
-  --color-ink-secondary: var(--t3);
-  --color-ink-tertiary: var(--t4);
-  --color-line-strong: var(--line3);
-  --color-brand: var(--acc);
-  --color-brand-wash: var(--acc-a);
-  --color-brand-ink: var(--acc-t2);
-  --color-up: var(--pos);
-  --color-up-wash: var(--pos-a);
-  --color-down: var(--neg);
-  --color-down-wash: var(--neg-a);
-  --color-warn: var(--amber);
-  --color-warn-wash: var(--amber-a);
 }
 
 @layer base {

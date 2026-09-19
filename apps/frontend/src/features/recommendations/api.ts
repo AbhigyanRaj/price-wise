@@ -12,7 +12,6 @@ export interface QueueFilters {
   minConfidence: string;
 }
 
-export const DEFAULT_QUEUE_FILTERS: QueueFilters = { status: "PENDING", minConfidence: "" };
 
 const LIMIT = 25;
 

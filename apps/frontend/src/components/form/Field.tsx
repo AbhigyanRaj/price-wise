@@ -44,12 +44,12 @@ export function Field({ id, label, register, error, hint, className, ...inputPro
         {...register}
       />
       {hint && (
-        <p id={`${id}-hint`} className="text-[12px] text-ink-tertiary">
+        <p id={`${id}-hint`} className="text-[12px] text-t4">
           {hint}
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="text-[12px] text-down">
+        <p id={`${id}-error`} className="text-[12px] text-neg">
           {error}
         </p>
       )}
