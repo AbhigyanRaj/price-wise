@@ -134,6 +134,10 @@ describe("approve / reject / modify", () => {
     const rec = await seedPending(orgA, 299.99);
     const res = await api(server, "POST", `/recommendations/${rec.id}/approve`, undefined, orgA.analystJar);
 
+    // Surface the error envelope on failure. A bare "expected 200, got 502"
+    // says nothing about which of the several execution guards fired, which
+    // cost an afternoon the first time this failed only on CI.
+    if (res.status !== 200) throw new Error(`approve failed: ${res.status} ${await res.text()}`);
     expect(res.status).toBe(200);
 
     const productAfter = await prisma.product.findUnique({ where: { id: orgA.firstProductId } });

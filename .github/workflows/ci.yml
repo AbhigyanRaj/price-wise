@@ -76,6 +76,11 @@ jobs:
       GROQ_API_KEY: ci-placeholder-never-called
       GROQ_MODEL_FAST: openai/gpt-oss-20b
       GROQ_MODEL_STRONG: openai/gpt-oss-120b
+      # Set here as well as in the package.json prefix. The suite asserts exact
+      # execution outcomes, so a simulated platform failure is not an acceptable
+      # source of nondeterminism in CI, and this is the belt to that braces.
+      MOCK_PLATFORM_FAILURE_RATE: "0"
+      MOCK_PLATFORM_LATENCY_MS: "0"
 
     steps:
       - uses: actions/checkout@v4
