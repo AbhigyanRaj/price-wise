@@ -64,6 +64,7 @@ async function main() {
       created,
       { adminId: admin.id, analystId: analyst.id },
       org.slug === "NW" ? 4242 : 8484,
+      org.confidenceThreshold,
     );
 
     for (const rec of recommendations) {

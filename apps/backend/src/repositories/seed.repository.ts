@@ -108,7 +108,9 @@ export interface SeedRecommendationInput {
     input: JsonValue;
     output: JsonValue;
     toolCalls: JsonValue;
-    confidence: number;
+    // Nullable, matching the column and the real pipeline: Execution &
+    // Compliance reports no confidence of its own.
+    confidence: number | null;
     model: string;
     promptTokens: number;
     completionTokens: number;
