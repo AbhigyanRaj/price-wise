@@ -258,6 +258,55 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /org/members:
+    get:
+      tags: [Organizations]
+      summary: List members of the current organization
+      responses:
+        '200':
+          description: Members, scoped to the caller's organization
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/User' }
+        '403':
+          description: Requires ADMIN role
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /org/invites/{inviteId}:
+    delete:
+      tags: [Organizations]
+      summary: Revoke an unused invite
+      parameters:
+        - in: path
+          name: inviteId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessMessage' }
+        '403':
+          description: Requires ADMIN role
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found, or belongs to another organization
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   # -------------------------------------------------------------- PRODUCTS
   /products:
     get:
@@ -312,6 +361,25 @@ paths:
                   - type: object
                     properties:
                       data: { $ref: '#/components/schemas/Product' }
+
+  /products/categories:
+    get:
+      tags: [Products]
+      summary: Distinct categories present in this organization's catalog
+      description: Feeds the catalog filter and the category field on the product form.
+      responses:
+        '200':
+          description: Category names
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { type: string }
 
   /products/{productId}:
     parameters:
@@ -557,6 +625,61 @@ paths:
                       pagination: { $ref: '#/components/schemas/CursorPagination' }
 
   # --------------------------------------------------------- MOCK ECOMMERCE
+  /audit-logs/actions:
+    get:
+      tags: [Audit]
+      summary: Distinct action names present in this organization's audit trail
+      description: Populates the Activity filter without the client hardcoding a list.
+      responses:
+        '200':
+          description: Action names
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { type: string }
+
+  # ----------------------------------------------------------------- HEALTH
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Liveness and dependency check
+      description: >-
+        Deliberately NOT wrapped in the success envelope, because it is consumed
+        by platform health checks rather than by the client. Groq being
+        unavailable is degraded rather than dead: the catalog, queue, activity
+        and settings all still work, so only generation is affected and the
+        check stays green.
+      security: []
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok] }
+                  checks:
+                    type: object
+                    properties:
+                      database: { type: boolean }
+                      groq: { type: boolean }
+                  uptime: { type: number }
+        '503':
+          description: Database unreachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [degraded] }
+
   /mock/ecommerce/update-price:
     post:
       tags: [Mock Ecommerce]

@@ -32,7 +32,7 @@ Read these before implementing anything. They all live in `docs/`.
 |---|---|---|
 | `docs/PRD.md` | ~200 numbered requirements (FR-*, AI-*, NFR-*, MT-*, TR-*), personas, journeys, edge cases, screen specs | Before building any feature |
 | `docs/IMPLEMENTATION_PLAN.md` | Phases 0–6, exact file paths, code, acceptance criteria, commit messages | Before starting any phase |
-| `docs/Pricewise_API_Contract.pdf` / `docs/openapi.yaml` | 19 endpoints, 18 schemas, error codes, SSE contract | Before writing any route |
+| `docs/Pricewise_API_Contract.pdf` / `docs/openapi.yaml` | 29 operations across 24 paths, error codes, SSE contract | Before writing any route |
 | `docs/Pricewise_HLD.excalidraw` | Six architecture diagrams | For structural questions |
 
 **If code and these documents disagree, the documents are right** — unless we
