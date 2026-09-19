@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pricewise</title>
+    <meta name="description" content="AI-assisted dynamic pricing intelligence" />
+
+    <!-- Native form controls and scrollbars follow the theme. -->
+    <meta name="color-scheme" content="light dark" />
+
+    <!--
+      Blocking, and deliberately so. shadcn's ThemeProvider applies the theme
+      class in useEffect, which paints the wrong theme first and then corrects
+      it. Running before the bundle means the correct class is on <html> for
+      the very first paint. Wrapped in try/catch because localStorage throws in
+      a private window with site data blocked.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("pricewise-theme");
+          var dark =
+            stored === "dark" ||
+            ((!stored || stored === "system") &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          /* no persisted preference available; fall through to light */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
