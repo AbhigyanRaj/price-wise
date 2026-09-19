@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FullPageSpinner } from "@/components/data/States";
 import { useAuth, SESSION_QUERY_KEY } from "@/features/auth/useAuth";
-import type { InviteDto, MemberDto, OrganizationDto, RecommendationDto } from "@/lib/types";
+import { ThresholdControl, DeltaControl } from "./ThresholdControl";
+import { CategoryRulesSection } from "./CategoryRulesSection";
+import type {
+  InviteDto,
+  MemberDto,
+  OrganizationDto,
+  ProductDto,
+  RecommendationDto,
+} from "@/lib/types";
 import { queryString } from "@/lib/api";
 
 export function SettingsPage() {
@@ -24,8 +32,16 @@ export function SettingsPage() {
   const { data: recent } = useQuery({
     queryKey: ["recommendations", "recent-scores"],
     queryFn: ({ signal }) =>
-      api.paged<RecommendationDto>(`/recommendations${queryString({ limit: 20 })}`, signal),
+      api.paged<RecommendationDto>(`/recommendations${queryString({ limit: 50 })}`, signal),
     staleTime: 60_000,
+  });
+
+  // One real product, so the maximum-change limit is shown as a price band
+  // rather than an abstract percentage.
+  const { data: sample } = useQuery({
+    queryKey: ["products", "band-sample"],
+    queryFn: ({ signal }) => api.paged<ProductDto>("/products?pageSize=1", signal),
+    staleTime: 5 * 60_000,
   });
 
   const { data: members } = useQuery({
@@ -60,15 +76,13 @@ export function SettingsPage() {
 
   if (!org) return <FullPageSpinner />;
 
-  const scores = (recent?.items ?? []).map((r) => r.confidenceScore);
-  const wouldAutoExecute = scores.filter((score) => score >= threshold).length;
-
   return (
-    <div className="max-w-3xl p-6">
+    <div className="max-w-[780px] px-[34px] py-7">
       <header className="mb-6">
-        <h1>Settings</h1>
-        <p className="mt-0.5 text-sm text-t3">
-          The risk posture this organization operates under.
+        <h1 className="text-[22px] tracking-[-0.022em]">Risk &amp; automation</h1>
+        <p className="mt-1 max-w-[56ch] text-[12.5px] leading-[1.6] text-t3">
+          How much of the pricing decision you delegate, and the hard limits Pricewise may never
+          cross.
         </p>
       </header>
 
@@ -78,61 +92,33 @@ export function SettingsPage() {
         </div>
       )}
 
-      <section className="mb-5 rounded-md border border-line bg-panel p-4">
-        <h3 className="mb-1">Auto-execution threshold</h3>
-        <p className="mb-4 text-[13px] text-t3">
-          Recommendations at or above this confidence apply without asking you.
-        </p>
+      <div className="space-y-4">
+        <ThresholdControl
+          value={threshold}
+          onChange={setThreshold}
+          recent={recent?.items ?? []}
+        />
 
-        <div className="flex items-center gap-4">
-          <input
-            type="range"
-            min={0.5}
-            max={1}
-            step={0.01}
-            value={threshold}
-            onChange={(e) => setThreshold(Number(e.target.value))}
-            aria-label="Confidence threshold"
-            className="h-1.5 flex-1 accent-[var(--brand)]"
-          />
-          <span className="tnum w-12 text-right font-mono text-sm">{threshold.toFixed(2)}</span>
-        </div>
+        <DeltaControl
+          value={maxDelta}
+          onChange={setMaxDelta}
+          sample={sample?.items[0] ?? null}
+        />
 
-        {/* An abstract number made concrete. "0.90" means nothing on its own;
-            "8 of your last 20" is a decision someone can actually make. */}
-        <p className="mt-3 rounded-md bg-bg px-3 py-2 text-[13px] text-t3">
-          Of your last {scores.length} recommendations,{" "}
-          <span className="tnum font-medium text-t1">{wouldAutoExecute}</span> would have executed
-          automatically at this threshold.
-        </p>
-
-        <h3 className="mb-1 mt-5">Maximum price change</h3>
-        <p className="mb-3 text-[13px] text-t3">
-          No single change may move a price by more than this, in either direction.
-        </p>
-        <div className="flex items-center gap-4">
-          <input
-            type="range"
-            min={0.05}
-            max={0.5}
-            step={0.01}
-            value={maxDelta}
-            onChange={(e) => setMaxDelta(Number(e.target.value))}
-            aria-label="Maximum price change"
-            className="h-1.5 flex-1 accent-[var(--brand)]"
-          />
-          <span className="tnum w-12 text-right font-mono text-sm">
-            {(maxDelta * 100).toFixed(0)}%
-          </span>
-        </div>
-
-        <div className="mt-4 flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
             {save.isPending ? "Saving" : "Save changes"}
           </Button>
-          {saved && <span className="text-[13px] text-pos">Saved</span>}
+          {saved && <span className="text-[12px] text-pos">Saved</span>}
+          {error && (
+            <span role="alert" className="text-[12px] text-neg">
+              {error}
+            </span>
+          )}
         </div>
-      </section>
+
+        <CategoryRulesSection />
+      </div>
 
       <InviteSection invites={invites ?? []} onChange={() => void refetchInvites()} />
 

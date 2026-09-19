@@ -165,15 +165,21 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 /** Same as request, but keeps the pagination block the envelope carries. */
-async function requestPaged<T>(path: string, signal?: AbortSignal): Promise<Paged<T>> {
+async function requestPaged<T>(
+  path: string,
+  signal?: AbortSignal,
+  isRetry = false,
+): Promise<Paged<T>> {
   const response = await fetch(`${BASE}${path}`, {
     credentials: "include",
     headers: { "Content-Type": "application/json", "X-Pricewise-Client": "web" },
     ...(signal ? { signal } : {}),
   });
 
-  if (response.status === 401) {
-    if (await attemptRefresh()) return requestPaged<T>(path, signal);
+  // The isRetry guard matters here for the same reason it does in request():
+  // without it, a 401 that survives a successful refresh recurses forever.
+  if (response.status === 401 && !isRetry) {
+    if (await attemptRefresh()) return requestPaged<T>(path, signal, true);
   }
 
   const payload = (await response.json().catch(() => null)) as
@@ -209,6 +215,7 @@ async function requestPaged<T>(path: string, signal?: AbortSignal): Promise<Page
 export const api = {
   get: <T>(path: string, signal?: AbortSignal) => request<T>(path, { ...(signal ? { signal } : {}) }),
   paged: requestPaged,
+  put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
