@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Search, Sparkles } from "lucide-react";
 import {
-  ConfidenceBadge,
-  DeltaChip,
-  InventoryBadge,
-  MarginCell,
-  Money,
-} from "@/components/data/Metrics";
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import { ConfidenceBadge, InventoryBadge, MarginCell, Money } from "@/components/data/Metrics";
+import { GapCell } from "./GapCell";
 import { EmptyFirstRun, EmptyNoMatches, ErrorState } from "@/components/data/States";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,14 +36,47 @@ const COLUMNS: {
   { key: "sku", label: "SKU", width: "w-36" },
   { key: "name", label: "Product", sortBy: "name", width: "" },
   { key: "price", label: "Price", numeric: true, sortBy: "currentPrice", width: "w-28" },
-  { key: "competitor", label: "Competitor", numeric: true, width: "w-32" },
+  { key: "competitor", label: "Market", numeric: true, width: "w-28" },
+  { key: "gap", label: "Gap", width: "w-36" },
   { key: "margin", label: "Margin", numeric: true, width: "w-24" },
   { key: "inventory", label: "Inventory", numeric: true, sortBy: "inventoryLevel", width: "w-36" },
   { key: "rec", label: "Recommendation", width: "w-36" },
   { key: "actions", label: "", width: "w-20" },
 ];
 
+/**
+ * Four ways to ask "which products need me".
+ *
+ * Client-side, deliberately. Each predicate reads a field already on the row,
+ * so filtering server-side would cost a round trip to compute something the
+ * browser already holds. The counts have to be honest about that: they describe
+ * the loaded page, not the whole catalogue, which the label says.
+ */
+const VIEWS = [
+  { key: "all", label: "All products", match: () => true },
+  {
+    key: "recommended",
+    label: "Has recommendation",
+    match: (p: ProductDto) => Boolean(p.pendingRecommendation),
+  },
+  {
+    key: "overstocked",
+    label: "Overstocked",
+    match: (p: ProductDto) => p.inventoryStatus === "OVERSTOCKED",
+  },
+  {
+    key: "margin",
+    label: "Margin risk",
+    // belowFloor is computed server-side against the product's own floor, so
+    // this agrees with what the rule engine would say.
+    match: (p: ProductDto) => p.belowFloor || p.margin < 0.2,
+  },
+] as const;
+
+type ViewKey = (typeof VIEWS)[number]["key"];
+
 export function CatalogPage() {
+  const [view, setView] = useState<ViewKey>("all");
   const [filters, setFilters] = useState<CatalogFilters>(DEFAULT_FILTERS);
   const { data, isPending, isError, error, refetch, isPlaceholderData } = useProducts(filters);
   const { data: categories } = useCategories();
@@ -52,8 +89,12 @@ export function CatalogPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<ProductDto | null>(null);
 
+  const loaded = data?.items ?? [];
+  const activeView = VIEWS.find((v) => v.key === view) ?? VIEWS[0];
+  const rows = loaded.filter(activeView.match);
+
   const hasActiveFilters =
-    filters.search !== "" || filters.category !== "" || filters.inventoryStatus !== "";
+    filters.search !== "" || filters.category !== "" || filters.inventoryStatus !== "" || view !== "all";
 
   function update(patch: Partial<CatalogFilters>) {
     // Any filter change returns to page one. Staying on page 7 of a result set
@@ -144,6 +185,38 @@ export function CatalogPage() {
         )}
       </div>
 
+      <div
+        role="tablist"
+        aria-label="Product views"
+        className="mb-3 flex flex-wrap items-center gap-4 border-b border-line"
+      >
+        {VIEWS.map((option) => {
+          const count = loaded.filter(option.match).length;
+          const active = view === option.key;
+          return (
+            <button
+              key={option.key}
+              role="tab"
+              aria-selected={active}
+              onClick={() => setView(option.key)}
+              className={cn(
+                "relative -mb-px flex items-center gap-1.5 pb-2 text-[12.5px] transition-colors duration-[110ms]",
+                active ? "text-t0" : "text-t4 hover:text-t2",
+              )}
+            >
+              {option.label}
+              <span className="tnum font-mono text-[10.5px] text-t5">{count}</span>
+              {active && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 h-[1.5px] rounded-full bg-acc2"
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="overflow-hidden rounded-md border border-line bg-panel">
         <table className="w-full text-[13px]">
           <thead>
@@ -195,7 +268,7 @@ export function CatalogPage() {
             {isPending && <SkeletonRows />}
 
             {!isPending &&
-              data?.items.map((product) => (
+              rows.map((product) => (
                 <ProductRow
                   key={product.id}
                   product={product}
@@ -221,15 +294,24 @@ export function CatalogPage() {
         {/* Two genuinely different situations, two different messages. Merging
             them into one "No results" is the classic empty-state mistake: one
             needs an onboarding action, the other needs a way out of a filter. */}
-        {!isPending && !isError && data?.items.length === 0 && hasActiveFilters && (
+        {/* rows, not items: a view tab can exclude everything even when the
+            request returned results, and an unexplained empty table is the
+            worst version of that. */}
+        {!isPending && !isError && rows.length === 0 && hasActiveFilters && (
           <EmptyNoMatches
             title="No products match these filters"
-            description="Try a different category or clear the filters to see the whole catalog."
-            action={{ label: "Clear filters", onClick: () => setFilters(DEFAULT_FILTERS) }}
+            description="Try a different view or category, or clear the filters to see the whole catalog."
+            action={{
+              label: "Clear filters",
+              onClick: () => {
+                setFilters(DEFAULT_FILTERS);
+                setView("all");
+              },
+            }}
           />
         )}
 
-        {!isPending && !isError && data?.items.length === 0 && !hasActiveFilters && (
+        {!isPending && !isError && rows.length === 0 && !hasActiveFilters && (
           <EmptyFirstRun
             title="No products yet"
             description="Seed the demo catalog with bun run db:seed, or add your first product."
@@ -294,11 +376,6 @@ function ProductRow({
   onDelete: () => void;
 }) {
   const competitor = product.latestCompetitorPrice;
-  // Our position relative to the market, computed here only for display. The
-  // agents compute their own from the same source data.
-  const competitorDelta = competitor
-    ? (competitor.price - product.currentPrice) / product.currentPrice
-    : null;
 
   return (
     <tr
@@ -322,17 +399,14 @@ function ProductRow({
         <Money value={product.currentPrice} />
       </td>
       <td className="px-3 text-right">
-        {competitor && competitorDelta !== null ? (
-          <span
-            className="inline-flex items-center gap-1.5"
-            title={`${competitor.competitor} at ${competitor.price}`}
-          >
-            <Money value={competitor.price} className="text-t3" />
-            <DeltaChip fraction={competitorDelta} />
-          </span>
+        {competitor ? (
+          <Money value={competitor.price} className="text-t3" title={competitor.competitor} />
         ) : (
-          <span className="text-xs text-t4">no data</span>
+          <span className="text-xs text-t6">none</span>
         )}
+      </td>
+      <td className="px-3">
+        <GapCell ours={product.currentPrice} market={competitor?.price ?? null} />
       </td>
       <td className="px-3 text-right">
         <MarginCell margin={product.margin} belowFloor={product.belowFloor} />
@@ -387,7 +461,7 @@ function ProductRow({
 /** Skeleton widths deliberately mirror the real columns, so nothing shifts
  *  when the data lands. A centred spinner would cause a visible jump. */
 function SkeletonRows() {
-  const widths = ["w-24", "w-48", "w-16", "w-24", "w-12", "w-20", "w-16", "w-10"];
+  const widths = ["w-24", "w-48", "w-16", "w-20", "w-28", "w-12", "w-20", "w-16", "w-10"];
 
   return (
     <>

@@ -152,6 +152,19 @@ export function MarginCell({ margin, belowFloor }: { margin: number; belowFloor:
 }
 
 /** Prices are mono and tabular so a column of them aligns on the decimal. */
-export function Money({ value, className }: { value: number; className?: string | undefined }) {
-  return <span className={cn("tnum font-mono", className)}>{money(value)}</span>;
+export function Money({
+  value,
+  className,
+  title,
+}: {
+  value: number;
+  className?: string | undefined;
+  /** Context the number alone does not carry, e.g. which competitor quoted it. */
+  title?: string | undefined;
+}) {
+  return (
+    <span className={cn("tnum font-mono", className)} title={title}>
+      {money(value)}
+    </span>
+  );
 }
