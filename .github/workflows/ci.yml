@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          # Pinned, not "latest". A runtime that silently changes under you is the
+          # same class of problem as an unpinned dependency.
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        # --frozen-lockfile fails if bun.lock is out of date with package.json,
+        # which catches the "works on my machine" class of bug at PR time.
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        # Prisma 7 no longer generates implicitly as part of any other command,
+        # and the generated client is gitignored, so CI must generate it before
+        # anything can typecheck against it.
+        run: bun run db:generate
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
