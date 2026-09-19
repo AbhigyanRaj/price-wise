@@ -37,10 +37,18 @@ export function checkBusinessRules(proposedPrice: number, ctx: RuleContext): Rul
 
   const margin = proposedPrice > 0 ? (proposedPrice - ctx.cost) / proposedPrice : 0;
   if (margin < ctx.marginFloorPct) {
+    // Both figures are printed at whatever precision actually separates them.
+    // A price landing a fraction under the floor otherwise produced "Margin
+    // 10.0% is below the 10.0% floor", which reads as a contradiction and
+    // looks like a bug to the analyst being asked to act on it. The rule
+    // itself is right to fire: rounding toward blocking is the safe direction
+    // for a floor.
+    const gap = ctx.marginFloorPct - margin;
+    const digits = gap < 0.001 ? 3 : gap < 0.01 ? 2 : 1;
     violations.push({
       rule: "MARGIN_FLOOR",
       severity: "block",
-      detail: `Margin ${(margin * 100).toFixed(1)}% is below the ${(ctx.marginFloorPct * 100).toFixed(1)}% floor`,
+      detail: `Margin ${(margin * 100).toFixed(digits)}% is below the ${(ctx.marginFloorPct * 100).toFixed(digits)}% floor`,
     });
   }
 
