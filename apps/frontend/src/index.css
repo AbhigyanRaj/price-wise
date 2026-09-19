@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
 /* Self-hosted variable fonts. No external request, no layout shift from a
-   late-arriving webfont. */
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+   late-arriving webfont.
+
+   Two families only, and the split is a rule rather than a preference:
+   anything a user might compare vertically is mono with tabular figures
+   (prices, deltas, confidence, timestamps, SKUs, ids). Anything they read as
+   language is the sans. Never mixed within one value. */
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource-variable/jetbrains-mono";
 
 /* Tailwind v4 needs to be told what "dark" means when the class is applied on
    <html> by our own script rather than by a media query. */
@@ -13,299 +18,493 @@
    Raw token values.
 
    Two layers, deliberately: concrete values here, semantic names in the
-   @theme block below. Changing the palette touches only this section.
+   @theme block below. Restyling touches only this section.
 
-   OKLCH throughout, because L is perceptual. Fixing L per contrast tier and
-   rotating H gives a semantic set whose members all read at the same
-   brightness, which HSL cannot do (HSL yellow and blue at L=50% differ hugely).
-
-   Dark is NOT an inversion of light. Three specific differences:
-     1. The dark canvas is 0.17, never pure black. Pure black plus light text
-        haloes, and there is nowhere left to go for a raised surface.
-     2. Dark borders are semi-transparent white, not a solid grey, so they read
-        correctly over any surface in the ladder.
-     3. Elevation changes mechanism: light uses a hairline plus a micro shadow,
-        dark uses a lighter surface and no shadow at all.
+   Dark is the default and light is NOT an inversion of it. The light theme is
+   a warm, paper-like surface family, and the semantic colours are retuned per
+   theme rather than reused: the dark positive green fails contrast on paper,
+   so light uses a darker one. Do the same for any new semantic colour.
 --------------------------------------------------------------------------- */
 
 :root {
-  /* Surface ladder. Each step has a role, so hover and active states are
-     looked up rather than guessed at. */
-  --canvas: oklch(0.985 0.002 265); /* page background */
-  --surface: oklch(1 0 0); /* cards, panels */
-  --surface-hover: oklch(0.968 0.004 265);
-  --surface-active: oklch(0.94 0.006 265);
+  /* surfaces */
+  --bg: #0d0d10;
+  --chrome: #0a0a0d;
+  --panel: #131318;
+  --raised: #17171d;
+  --inset: #101014;
+  --input: #0c0c10;
+  --hover: #191920;
+  --sel: #1e1d28;
+  --ctl: #1a1a21;
+  --ctl-hover: #212028;
 
-  --line: oklch(0.915 0.006 265); /* default hairline */
-  --line-strong: oklch(0.86 0.008 265); /* hover border, dividers that matter */
+  /* lines */
+  --line: #22212a;
+  --line2: #1a1a21;
+  --line3: #2a2933;
+  --border: #32313c;
+  --border-strong: #403e4a;
+  --avatar-bg: #2a2834;
 
-  /* Ink. A fixed two-step drop, applied identically everywhere. Only primary
-     text sits at full contrast. */
-  --ink: oklch(0.21 0.015 265);
-  --ink-secondary: oklch(0.47 0.014 265);
-  --ink-tertiary: oklch(0.60 0.012 265);
+  /* text ramp, t0 brightest to t6 faintest */
+  --t0: #f5f3f9;
+  --t1: #e8e6ef;
+  --t2: #b3afbe;
+  --t3: #8f8b9b;
+  --t4: #6f6c7a;
+  --t5: #585564;
+  --t6: #3e3c48;
 
-  /* The one accent. Appears on the wordmark, the primary button, the focus
-     ring, the active nav item and the running agent indicator. Nowhere else. */
-  --brand: oklch(0.55 0.21 280);
-  --brand-hover: oklch(0.50 0.21 280);
-  --brand-ink: oklch(0.99 0 0); /* text on top of the accent */
-  --brand-wash: oklch(0.55 0.21 280 / 0.10); /* tinted background */
+  /* accent */
+  --acc: #6f62e6;
+  --acc-hover: #7f73f2;
+  --acc2: #8f84f0;
+  --acc-t: #a79cff;
+  --acc-t2: #c4bcff;
+  --acc-t3: #d5cfff;
+  --focus: #5f55cf;
+  --on-acc: #ffffff;
+  --acc-a: rgba(120, 107, 240, 0.13);
+  --acc-a2: rgba(120, 107, 240, 0.22);
+  --acc-border: rgba(120, 107, 240, 0.36);
+  --acc-band: rgba(120, 107, 240, 0.45);
 
-  /* Semantic. Separate from the accent on purpose: in a pricing product green
-     and red carry meaning, so they cannot also be decoration. */
-  --up: oklch(0.52 0.15 150);
-  --up-wash: oklch(0.52 0.15 150 / 0.12);
-  --down: oklch(0.54 0.20 25);
-  --down-wash: oklch(0.54 0.20 25 / 0.12);
-  --warn: oklch(0.56 0.14 75);
-  --warn-wash: oklch(0.56 0.14 75 / 0.14);
+  /* semantic */
+  --pos: #4cc38a;
+  --pos2: #74d4a6;
+  --neg: #e5645e;
+  --neg2: #f08a85;
+  --amber: #d8a13a;
+  --amber2: #e5bc67;
+  --pos-a: rgba(76, 195, 138, 0.13);
+  --neg-a: rgba(229, 100, 94, 0.13);
+  --neg-border: rgba(229, 100, 94, 0.34);
+  --amber-a: rgba(216, 161, 58, 0.13);
+  --amber-border: rgba(216, 161, 58, 0.3);
 
-  --ring: var(--brand);
+  /* scrims and elevation */
+  --scrim: rgba(6, 6, 9, 0.5);
+  --bar-bg: rgba(13, 13, 16, 0.82);
+  --sh-card: 0 20px 48px -22px rgba(0, 0, 0, 0.85), 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  --sh-pop: 0 32px 74px -28px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --sh-panel: -28px 0 64px -34px rgba(0, 0, 0, 0.85);
+  --sh-thumb: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --sh-row: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  --noise-opacity: 0.035;
 
-  /* Only genuinely floating layers get a shadow. Nothing inline ever does. */
-  --shadow-overlay: 0 8px 24px -6px oklch(0.21 0.015 265 / 0.14),
-    0 2px 6px -2px oklch(0.21 0.015 265 / 0.08);
-
-  --radius: 0.375rem; /* 6px, the default for cards and inputs */
+  /* Two very wide radials painted on the app background. Large flat surfaces
+     read as plastic without them. */
+  --env: radial-gradient(1300px 720px at 16% -14%, rgba(120, 107, 240, 0.1), transparent 62%),
+    radial-gradient(1000px 560px at 98% -6%, rgba(255, 255, 255, 0.035), transparent 60%);
 }
 
-.dark {
-  --canvas: oklch(0.17 0.012 265);
-  --surface: oklch(0.205 0.013 265);
-  --surface-hover: oklch(0.245 0.014 265);
-  --surface-active: oklch(0.285 0.015 265);
+.light {
+  --bg: #f7f6f3;
+  --chrome: #f1f0ec;
+  --panel: #ffffff;
+  --raised: #ffffff;
+  --inset: #fbfaf8;
+  --input: #ffffff;
+  --hover: #f1efea;
+  --sel: #efecfb;
+  --ctl: #ffffff;
+  --ctl-hover: #f4f2ee;
 
-  --line: oklch(1 0 0 / 0.08);
-  --line-strong: oklch(1 0 0 / 0.145);
+  --line: #e5e2db;
+  --line2: #edeae3;
+  --line3: #ddd9d0;
+  --border: #d5d1c7;
+  --border-strong: #b9b4a8;
+  --avatar-bg: #e7e4dc;
 
-  --ink: oklch(0.965 0.004 265);
-  --ink-secondary: oklch(0.725 0.012 265);
-  --ink-tertiary: oklch(0.585 0.014 265);
+  --t0: #15151a;
+  --t1: #26262e;
+  --t2: #55535f;
+  --t3: #6e6b78;
+  --t4: #8b8794;
+  --t5: #a4a0ab;
+  --t6: #c6c2cb;
 
-  /* Lightness lifted and chroma dropped ~20%. A violet that sits calmly on
-     white vibrates on near-black at the same saturation. */
-  --brand: oklch(0.70 0.165 280);
-  --brand-hover: oklch(0.755 0.155 280);
-  --brand-ink: oklch(0.17 0.012 265);
-  --brand-wash: oklch(0.70 0.165 280 / 0.16);
+  --acc: #5a4bd4;
+  --acc-hover: #4e40c4;
+  --acc2: #6355db;
+  --acc-t: #5343c9;
+  --acc-t2: #4635b8;
+  --acc-t3: #8478e8;
+  --focus: #a79cff;
+  --on-acc: #ffffff;
+  --acc-a: rgba(90, 75, 212, 0.07);
+  --acc-a2: rgba(90, 75, 212, 0.13);
+  --acc-border: rgba(90, 75, 212, 0.26);
+  --acc-band: rgba(90, 75, 212, 0.34);
 
-  --up: oklch(0.755 0.135 150);
-  --up-wash: oklch(0.755 0.135 150 / 0.16);
-  --down: oklch(0.72 0.155 25);
-  --down-wash: oklch(0.72 0.155 25 / 0.16);
-  --warn: oklch(0.80 0.13 75);
-  --warn-wash: oklch(0.80 0.13 75 / 0.18);
+  /* Darkened from the handoff's #2c8c5f, which reaches only 3.87:1 on --bg.
+     It is used for positive delta text at 12-14px, so it owes 4.5:1 under the
+     project's WCAG AA rule; this is the smallest change that clears it (4.50
+     on --bg, 4.87 on --panel) while holding the hue. Asserted in
+     design/contrast.test.ts. */
+  --pos: #288057;
+  --pos2: #1f7350;
+  --neg: #c2463d;
+  --neg2: #a8362e;
+  --amber: #96670e;
+  --amber2: #7d5609;
+  --pos-a: rgba(44, 140, 95, 0.09);
+  --neg-a: rgba(194, 70, 61, 0.08);
+  --neg-border: rgba(194, 70, 61, 0.28);
+  --amber-a: rgba(150, 103, 14, 0.09);
+  --amber-border: rgba(150, 103, 14, 0.24);
 
-  /* Elevation in dark comes from the lighter surface above, not from a shadow.
-     Overlays keep a shadow only to separate them from the page behind. */
-  --shadow-overlay: 0 10px 30px -8px oklch(0 0 0 / 0.6);
+  --scrim: rgba(46, 43, 38, 0.26);
+  --bar-bg: rgba(247, 246, 243, 0.84);
+  --sh-card: 0 14px 34px -16px rgba(58, 54, 46, 0.22), 0 1px 2px rgba(58, 54, 46, 0.06);
+  --sh-pop: 0 26px 60px -22px rgba(58, 54, 46, 0.28), 0 1px 3px rgba(58, 54, 46, 0.08);
+  --sh-panel: -26px 0 54px -32px rgba(58, 54, 46, 0.24);
+  --sh-thumb: 0 2px 6px rgba(58, 54, 46, 0.28);
+  --sh-row: none;
+  --noise-opacity: 0.05;
+
+  --env: radial-gradient(1300px 720px at 16% -14%, rgba(90, 75, 212, 0.055), transparent 62%),
+    radial-gradient(1000px 560px at 98% -6%, rgba(255, 255, 255, 0.9), transparent 60%);
 }
 
 /* ---------------------------------------------------------------------------
-   Semantic mapping.
+   Semantic layer.
 
-   `inline` is load-bearing. Without it Tailwind emits a reference to a
-   @theme-scoped COPY of the variable, which never re-resolves under .dark, and
-   dark mode silently does nothing at all.
+   `inline` is load-bearing: it makes Tailwind emit the var() reference rather
+   than the resolved value, so a utility written once follows whichever theme
+   is active instead of freezing the value it was compiled with.
 --------------------------------------------------------------------------- */
-
 @theme inline {
-  --color-canvas: var(--canvas);
-  --color-surface: var(--surface);
-  --color-surface-hover: var(--surface-hover);
-  --color-surface-active: var(--surface-active);
+  --color-bg: var(--bg);
+  --color-chrome: var(--chrome);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-inset: var(--inset);
+  --color-input: var(--input);
+  --color-hover: var(--hover);
+  --color-sel: var(--sel);
+  --color-ctl: var(--ctl);
+  --color-ctl-hover: var(--ctl-hover);
 
   --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
+  --color-line2: var(--line2);
+  --color-line3: var(--line3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-avatar-bg: var(--avatar-bg);
 
-  --color-ink: var(--ink);
-  --color-ink-secondary: var(--ink-secondary);
-  --color-ink-tertiary: var(--ink-tertiary);
+  --color-t0: var(--t0);
+  --color-t1: var(--t1);
+  --color-t2: var(--t2);
+  --color-t3: var(--t3);
+  --color-t4: var(--t4);
+  --color-t5: var(--t5);
+  --color-t6: var(--t6);
 
-  --color-brand: var(--brand);
-  --color-brand-hover: var(--brand-hover);
-  --color-brand-ink: var(--brand-ink);
-  --color-brand-wash: var(--brand-wash);
+  --color-acc: var(--acc);
+  --color-acc-hover: var(--acc-hover);
+  --color-acc2: var(--acc2);
+  --color-acc-t: var(--acc-t);
+  --color-acc-t2: var(--acc-t2);
+  --color-acc-t3: var(--acc-t3);
+  --color-on-acc: var(--on-acc);
+  --color-acc-a: var(--acc-a);
+  --color-acc-a2: var(--acc-a2);
+  --color-acc-border: var(--acc-border);
+  --color-acc-band: var(--acc-band);
 
-  --color-up: var(--up);
-  --color-up-wash: var(--up-wash);
-  --color-down: var(--down);
-  --color-down-wash: var(--down-wash);
-  --color-warn: var(--warn);
-  --color-warn-wash: var(--warn-wash);
+  --color-pos: var(--pos);
+  --color-pos2: var(--pos2);
+  --color-neg: var(--neg);
+  --color-neg2: var(--neg2);
+  --color-amber: var(--amber);
+  --color-amber2: var(--amber2);
+  --color-pos-a: var(--pos-a);
+  --color-neg-a: var(--neg-a);
+  --color-neg-border: var(--neg-border);
+  --color-amber-a: var(--amber-a);
+  --color-amber-border: var(--amber-border);
 
-  --color-ring: var(--ring);
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, monospace;
 
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", monospace;
+  /* 3 keycaps, 4 tag, 5 small control, 6 input/button, 7 inset block,
+     8 toast, 10-12 card/popover. */
+  --radius-key: 3px;
+  --radius-tag: 4px;
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-inset: 7px;
+  --radius-toast: 8px;
+  --radius-card: 11px;
 
-  /* Two radii and a pill is the entire system. */
-  --radius-sm: 0.25rem;
-  --radius-md: var(--radius);
-  --radius-lg: 0.5rem;
+  --shadow-card: var(--sh-card);
+  --shadow-pop: var(--sh-pop);
+  --shadow-panel: var(--sh-panel);
+  --shadow-thumb: var(--sh-thumb);
+  --shadow-row: var(--sh-row);
 
-  --shadow-overlay: var(--shadow-overlay);
+  /* Anything that moves in space uses this. Opacity and colour use plain ease. */
+  --ease-spatial: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* shadcn/ui component vocabulary, mapped onto the ladder above. Its
-     components are used unmodified; they simply resolve to our palette.
-     Note shadcn's "accent" means a subtle hover surface, NOT a brand colour,
-     which is why ours is called brand. */
-  --color-background: var(--canvas);
-  --color-foreground: var(--ink);
-  --color-card: var(--surface);
-  --color-card-foreground: var(--ink);
-  --color-popover: var(--surface);
-  --color-popover-foreground: var(--ink);
-  --color-primary: var(--brand);
-  --color-primary-foreground: var(--brand-ink);
-  --color-secondary: var(--surface-hover);
-  --color-secondary-foreground: var(--ink);
-  --color-muted: var(--surface-hover);
-  --color-muted-foreground: var(--ink-secondary);
-  --color-accent: var(--surface-hover);
-  --color-accent-foreground: var(--ink);
-  --color-destructive: var(--down);
-  --color-destructive-foreground: var(--brand-ink);
-  --color-border: var(--line);
-  --color-input: var(--line);
-
-  /* Recharts reads these through shadcn's ChartContainer, which emits a
-     per-chart style block scoped to [data-chart] and .dark [data-chart]. The
-     SVG resolves the variable at paint, so charts re-theme with no JS. */
-  --color-chart-1: var(--brand);
-  --color-chart-2: var(--up);
-  --color-chart-3: var(--down);
-  --color-chart-4: var(--warn);
-  --color-chart-5: var(--ink-tertiary);
+  /* ---- Compatibility aliases, temporary -----------------------------------
+     The previous palette's semantic names, pointed at the new values. They
+     exist so the app keeps building and stays demoable while the screens are
+     ported one at a time, rather than every screen breaking at once the moment
+     the tokens changed.
+     Delete each alias as the last screen using it is ported. When this block
+     is empty, the port is finished.
+  ------------------------------------------------------------------------- */
+  --color-canvas: var(--bg);
+  --color-surface: var(--panel);
+  --color-surface-hover: var(--hover);
+  --color-surface-active: var(--sel);
+  --color-ink: var(--t0);
+  --color-ink-secondary: var(--t3);
+  --color-ink-tertiary: var(--t4);
+  --color-line-strong: var(--line3);
+  --color-brand: var(--acc);
+  --color-brand-wash: var(--acc-a);
+  --color-brand-ink: var(--acc-t2);
+  --color-up: var(--pos);
+  --color-up-wash: var(--pos-a);
+  --color-down: var(--neg);
+  --color-down-wash: var(--neg-a);
+  --color-warn: var(--amber);
+  --color-warn-wash: var(--amber-a);
 }
 
-/* ---------------------------------------------------------------------------
-   Base
---------------------------------------------------------------------------- */
-
 @layer base {
-  * {
-    border-color: var(--line);
+  html {
+    background: var(--bg);
+    color-scheme: dark;
   }
 
-  html {
-    /* Tells the browser which native control palette to use, so scrollbars,
-       date pickers and autofill match the theme. */
-    color-scheme: light dark;
+  html.light {
+    color-scheme: light;
   }
 
   body {
-    background-color: var(--canvas);
-    color: var(--ink);
+    background-color: var(--bg);
+    background-image: var(--env);
+    background-attachment: fixed;
+    color: var(--t1);
     font-family: var(--font-sans);
+    /* Density is the design. This is a professional data tool and it is
+       deliberately tighter than a consumer app: do not loosen it to
+       "standard" SaaS spacing. */
+    font-size: 13px;
+    line-height: 1.45;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* One focus spec, everywhere, never removed. Consistency between the login
-     ring and the table ring is read as craft. :focus-visible rather than
-     :focus so a mouse click does not leave a ring behind. */
+  /* Makes a theme switch cross-fade rather than snap. Scoped to colour
+     properties only, so it never interferes with layout animation. */
+  body * {
+    transition:
+      background-color 170ms var(--ease-spatial),
+      border-color 170ms var(--ease-spatial),
+      color 170ms var(--ease-spatial),
+      fill 170ms var(--ease-spatial),
+      stroke 170ms var(--ease-spatial);
+  }
+
+  /* One focus spec, applied identically to buttons, inputs, rows and links,
+     and never removed. Consistency between the sign-in ring and the table row
+     ring is read as craft. */
   :focus-visible {
-    outline: 2px solid var(--ring);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
     border-radius: 2px;
   }
 
-  /* Negative tracking scaled with size. This is the single strongest cue that
-     type has been considered rather than defaulted. */
-  h1 {
-    font-size: 1.75rem;
-    line-height: 2.125rem;
-    letter-spacing: -0.032em;
-    font-weight: 600;
-  }
-  h2 {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
-    letter-spacing: -0.02em;
-    font-weight: 600;
-  }
+  h1,
+  h2,
   h3 {
-    font-size: 1rem;
-    line-height: 1.5rem;
-    letter-spacing: -0.01em;
+    color: var(--t0);
     font-weight: 600;
   }
 
-  /* Every figure in a column has to occupy the same width or the column cannot
-     be scanned. Non-negotiable in a pricing table. */
-  .tnum {
+  h1 {
+    font-size: 27px;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    font-size: 23px;
+    line-height: 1.2;
+    letter-spacing: -0.022em;
+  }
+
+  h3 {
+    font-size: 13px;
+    letter-spacing: -0.005em;
+  }
+
+  /* Every numeral in the app lines up vertically. */
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum";
   }
 }
 
 @layer utilities {
-  /* Grain. This is what stops a large soft gradient banding, and it is most of
-     the difference between a background that reads as premium and one that
-     reads as a 2021 template. Rendered once as an inline SVG turbulence rather
-     than shipping a texture image. */
-  .grain::after {
+  /* Tabular figures. On any number a user might compare down a column. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Uppercase mono section label. The only place 9.5px is allowed, alongside
+     keycaps. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--t4);
+  }
+
+  .keycap {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 500;
+    line-height: 1;
+    padding: 2px 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-key);
+    color: var(--t3);
+  }
+
+  /* Fixed, non-interactive fractal noise over the whole viewport. It is what
+     keeps the large flat surfaces from looking plastic. */
+  .noise::after {
     content: "";
-    position: absolute;
+    position: fixed;
     inset: 0;
+    z-index: 9999;
     pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-
-  .dark .grain::after {
-    opacity: 0.05;
-  }
-
-  /* Reads as "processing". A spinner reads as "waiting", which is a different
-     and less truthful thing to say while five agents are actually working. */
-  .shimmer {
-    background: linear-gradient(
-      90deg,
-      var(--ink-tertiary) 0%,
-      var(--ink) 45%,
-      var(--ink-tertiary) 90%
-    );
-    background-size: 200% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: shimmer 1.8s linear infinite;
-  }
-
-  @keyframes shimmer {
-    to {
-      background-position: -200% 0;
-    }
+    opacity: var(--noise-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Reduced motion.
+/* Fade and 6px rise. The default enter for anything revealed in place. */
+@keyframes pwIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
-   0.01ms rather than 0: a zero-duration animation may never fire its
-   `animationend` event, which silently breaks any handler waiting on it.
---------------------------------------------------------------------------- */
+@keyframes pwDrawer {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
+@keyframes pwPal {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pwToast {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The environment pill's dot. Slow enough to read as "live" rather than as a
+   thing demanding attention. */
+@keyframes pwBreathe {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes pwSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pwShimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@layer utilities {
+  .pw-in {
+    animation: pwIn 160ms var(--ease-spatial) both;
+  }
+  .pw-drawer {
+    animation: pwDrawer 200ms var(--ease-spatial) both;
+  }
+  .pw-pal {
+    animation: pwPal 140ms var(--ease-spatial) both;
+  }
+  .pw-toast {
+    animation: pwToast 180ms var(--ease-spatial) both;
+  }
+  .pw-breathe {
+    animation: pwBreathe 3.4s ease-in-out infinite;
+  }
+
+  /* A shimmer reads as "processing". A spinner reads as "waiting", which is a
+     less honest thing to say while work is actually happening. */
+  .shimmer {
+    background-image: linear-gradient(90deg, transparent, var(--acc-a2), transparent);
+    background-size: 200% 100%;
+    animation: pwShimmer 1.6s linear infinite;
+  }
+}
+
+/* Not zero: a zero-duration animation may never fire animationend, and some
+   components wait on it. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
-  }
-
-  /* The shimmer becomes plain text rather than disappearing. Reduced motion
-     should mean a different affordance, not a missing one. */
-  .shimmer {
-    animation: none;
-    background: none;
-    -webkit-background-clip: border-box;
-    background-clip: border-box;
-    color: var(--ink-secondary);
   }
 }

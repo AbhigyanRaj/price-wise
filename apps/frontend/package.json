@@ -13,6 +13,8 @@
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "5.3.0",
+    "@fontsource-variable/instrument-sans": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@hookform/resolvers": "5.9.1",
     "@pricewise/shared": "workspace:*",
     "@tailwindcss/vite": "4.3.3",

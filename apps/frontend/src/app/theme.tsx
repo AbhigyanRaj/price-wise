@@ -45,6 +45,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // The inline script in index.html already set the correct class before first
   // paint. This keeps it in sync on every later change.
   useEffect(() => {
+    // `light` carries the token overrides; `dark` is kept in sync so the
+    // shadcn primitives' dark: variants still resolve. Both, not either.
+    document.documentElement.classList.toggle("light", resolved === "light");
     document.documentElement.classList.toggle("dark", resolved === "dark");
   }, [resolved]);
 

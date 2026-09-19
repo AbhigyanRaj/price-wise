@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0d0d10; --chrome:#0a0a0d; --panel:#131318; --raised:#17171d; --inset:#101014; --input:#0c0c10;
+  --hover:#191920; --sel:#1e1d28; --ctl:#1a1a21; --ctlHover:#212028;
+  --line:#22212a; --line2:#1a1a21; --line3:#2a2933; --border:#32313c; --borderStrong:#403e4a; --avatarBg:#2a2834;
+  --t0:#f5f3f9; --t1:#e8e6ef; --t2:#b3afbe; --t3:#8f8b9b; --t4:#6f6c7a; --t5:#585564; --t6:#3e3c48;
+  --acc:#6f62e6; --accHover:#7f73f2; --acc2:#8f84f0; --accT:#a79cff; --accT2:#c4bcff; --accT3:#d5cfff;
+  --focus:#5f55cf; --onAcc:#ffffff;
+  --accA:rgba(120,107,240,.13); --accA2:rgba(120,107,240,.22); --accBorder:rgba(120,107,240,.36); --accBand:rgba(120,107,240,.45);
+  --pos:#4cc38a; --pos2:#74d4a6; --neg:#e5645e; --neg2:#f08a85; --amber:#d8a13a; --amber2:#e5bc67;
+  --posA:rgba(76,195,138,.13); --negA:rgba(229,100,94,.13); --negBorder:rgba(229,100,94,.34);
+  --amberA:rgba(216,161,58,.13); --amberBorder:rgba(216,161,58,.3);
+  --scrim:rgba(6,6,9,.5); --barBg:rgba(13,13,16,.82);
+  --shCard:0 20px 48px -22px rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.03) inset;
+  --shPop:0 32px 74px -28px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.04) inset;
+  --shPanel:-28px 0 64px -34px rgba(0,0,0,.85);
+  --shThumb:0 2px 8px rgba(0,0,0,.6);
+  --shRow:0 1px 0 rgba(255,255,255,.02) inset;
+  --env:radial-gradient(1300px 720px at 16% -14%, rgba(120,107,240,.10), transparent 62%), radial-gradient(1000px 560px at 98% -6%, rgba(255,255,255,.035), transparent 60%);
+  --noiseOpacity:.035;
+}
+:root[data-pw-theme="light"]{
+  color-scheme:light;
+  --bg:#f7f6f3; --chrome:#f1f0ec; --panel:#ffffff; --raised:#ffffff; --inset:#fbfaf8; --input:#ffffff;
+  --hover:#f1efea; --sel:#efecfb; --ctl:#ffffff; --ctlHover:#f4f2ee;
+  --line:#e5e2db; --line2:#edeae3; --line3:#ddd9d0; --border:#d5d1c7; --borderStrong:#b9b4a8; --avatarBg:#e7e4dc;
+  --t0:#15151a; --t1:#26262e; --t2:#55535f; --t3:#6e6b78; --t4:#8b8794; --t5:#a4a0ab; --t6:#c6c2cb;
+  --acc:#5a4bd4; --accHover:#4e40c4; --acc2:#6355db; --accT:#5343c9; --accT2:#4635b8; --accT3:#8478e8;
+  --focus:#a79cff; --onAcc:#ffffff;
+  --accA:rgba(90,75,212,.07); --accA2:rgba(90,75,212,.13); --accBorder:rgba(90,75,212,.26); --accBand:rgba(90,75,212,.34);
+  --pos:#2c8c5f; --pos2:#1f7350; --neg:#c2463d; --neg2:#a8362e; --amber:#96670e; --amber2:#7d5609;
+  --posA:rgba(44,140,95,.09); --negA:rgba(194,70,61,.08); --negBorder:rgba(194,70,61,.28);
+  --amberA:rgba(150,103,14,.09); --amberBorder:rgba(150,103,14,.24);
+  --scrim:rgba(46,43,38,.26); --barBg:rgba(247,246,243,.84);
+  --shCard:0 14px 34px -16px rgba(58,54,46,.22), 0 1px 2px rgba(58,54,46,.06);
+  --shPop:0 26px 60px -22px rgba(58,54,46,.28), 0 1px 3px rgba(58,54,46,.08);
+  --shPanel:-26px 0 54px -32px rgba(58,54,46,.24);
+  --shThumb:0 2px 6px rgba(58,54,46,.28);
+  --shRow:none;
+  --env:radial-gradient(1300px 720px at 16% -14%, rgba(90,75,212,.055), transparent 62%), radial-gradient(1000px 560px at 98% -6%, rgba(255,255,255,.9), transparent 60%);
+  --noiseOpacity:.05;
+}
+body *{transition-property:background-color,border-color,color,fill,stroke;transition-duration:170ms;transition-timing-function:cubic-bezier(.2,.8,.2,1);}
+@keyframes pwShimmer{0%{background-position:-180% 0}100%{background-position:280% 0}}
+@keyframes pwTrace{to{stroke-dashoffset:0}}
+@keyframes pwRise{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@keyframes pwSpin{to{transform:rotate(360deg)}}
+@keyframes pwPing{0%{transform:scale(1);opacity:.5}70%,100%{transform:scale(2.6);opacity:0}}
+
+html,body{margin:0;padding:0;background:var(--bg);}
+body{font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--t1);}
+*{box-sizing:border-box;}
+a{color:var(--accT);text-decoration:none;}
+a:hover{color:var(--accT2);}
+::selection{background:var(--accA2);color:var(--onAcc);}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;border:2px solid transparent;background-clip:content-box;}
+::-webkit-scrollbar-thumb:hover{background:var(--borderStrong);background-clip:content-box;}
+::-webkit-scrollbar-track{background:transparent;}
+input,button,select,textarea{font-family:inherit;}
+@keyframes pwBreathe{0%,100%{opacity:.30}50%{opacity:.95}}
+@keyframes pwSweep{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}
+@keyframes pwIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes pwDrawer{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes pwPal{from{opacity:0;transform:translateY(-8px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes pwToast{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important}}
+</style>
+</helmet>
+
+<div style="height:100vh;width:100%;display:flex;flex-direction:column;background-color:var(--bg);background-image:var(--env);overflow-x:auto;overflow-y:hidden;font-size:13px;line-height:1.45;position:relative">
+<div style="position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--noiseOpacity);background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22150%22 height=%22150%22 filter=%22url(%23n)%22 opacity=%220.4%22/></svg>')"></div>
+
+<sc-if value="{{ signedOut }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:40px;background:radial-gradient(1100px 620px at 30% 40%, var(--bg) 0%, var(--bg) 62%)">
+  <div style="width:100%;max-width:1000px;display:flex;gap:48px;align-items:center;flex-wrap:wrap">
+
+    <div style="flex:1 1 400px;min-width:320px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:34px">
+        <svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="10" width="3" height="7" rx="1" style="fill:var(--acc)"></rect><rect x="6" y="6" width="3" height="11" rx="1" style="fill:var(--acc2)"></rect><rect x="11" y="1" width="3" height="16" rx="1" style="fill:var(--accT3)"></rect></svg>
+        <span style="font-size:14px;font-weight:600;letter-spacing:-0.01em">Pricewise</span>
+      </div>
+      <div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.18em;color:var(--t4);margin-bottom:16px">CONTINUOUS PRICING INTELLIGENCE</div>
+      <h1 style="margin:0 0 14px;font-size:38px;line-height:1.08;letter-spacing:-0.028em;font-weight:600;color:var(--t0);max-width:14ch">Five specialists. One price.</h1>
+      <p style="margin:0 0 34px;font-size:14px;line-height:1.6;color:var(--t3);max-width:44ch">Market, inventory, demand, strategy and compliance run continuously. You are only brought in when a decision genuinely needs human judgment.</p>
+
+      <div style="border:1px solid var(--line);border-radius:10px;background:var(--inset);overflow:hidden;max-width:440px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--chrome)">
+          <span style="font:500 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);letter-spacing:.04em">NW-ELEC-0002</span>
+          <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ authProgress }}</span>
+        </div>
+        <div style="padding:6px 0">
+          <sc-for list="{{ authAgents }}" as="a" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 14px;transition:opacity 200ms ease">
+              <span style="width:11px;height:11px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background: {{ a.dotBg }}">
+                <span style="width:3px;height:3px;border-radius:50%;background: {{ a.dot }}"></span>
+              </span>
+              <span style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;width:96px;flex:none;color: {{ a.keyColor }}">{{ a.key }}</span>
+              <span style="font-size:12.5px;flex:1;color: {{ a.color }}">{{ a.name }}</span>
+              <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color: {{ a.stateColor }}">{{ a.state }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;background: {{ authReadyBg }};transition:background 260ms ease">
+          <span style="font-size:12px;white-space:nowrap;color: {{ authReadyColor }};transition:color 260ms ease">{{ authReadyLabel }}</span>
+          <span style="font:500 12.5px/1 'JetBrains Mono',monospace;color: {{ authReadyColor }};opacity: {{ authReadyOpacity }};transition:opacity 260ms ease">$790.77 → $762.22</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:0 0 352px;max-width:100%">
+      <div style="border:1px solid var(--line3);border-radius:12px;background:var(--raised);padding:26px 26px 22px;box-shadow:var(--shCard)">
+        <div style="font-size:15px;font-weight:600;letter-spacing:-0.01em;margin-bottom:4px">Sign in</div>
+        <div style="font-size:12.5px;color:var(--t3);margin-bottom:22px">Northwind Retail · production workspace</div>
+
+        <label style="display:block;font-size:11.5px;color:var(--t3);margin-bottom:6px">Email</label>
+        <input type="text" value="{{ email }}" onChange="{{ setEmail }}" placeholder="you@company.com" style="width:100%;height:34px;padding:0 10px;margin-bottom:14px;background:var(--input);border:1px solid var(--border);border-radius:6px;color:var(--t1);font-size:12.5px;outline:none;transition:border-color 140ms ease" style-focus="border-color:var(--focus)" />
+
+        <label style="display:block;font-size:11.5px;color:var(--t3);margin-bottom:6px">Password</label>
+        <input type="password" value="{{ password }}" onChange="{{ setPassword }}" placeholder="••••••••" style="width:100%;height:34px;padding:0 10px;margin-bottom:18px;background:var(--input);border:1px solid var(--border);border-radius:6px;color:var(--t1);font-size:12.5px;outline:none;transition:border-color 140ms ease" style-focus="border-color:var(--focus)" />
+
+        <button onClick="{{ signIn }}" style="width:100%;height:34px;border:0;border-radius:6px;background:var(--acc);color:var(--onAcc);font-size:12.5px;font-weight:600;cursor:pointer;transition:background 140ms ease" style-hover="background:var(--accHover)">Continue</button>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px">
+          <span style="flex:1;height:1px;background:var(--line)"></span>
+          <span style="font:400 9.5px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--t3)">DEMO ACCESS</span>
+          <span style="flex:1;height:1px;background:var(--line)"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{ demoAccounts }}" as="d" hint-placeholder-count="2">
+            <button onClick="{{ d.use }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 9px;background:transparent;border:1px solid var(--line);border-radius:5px;cursor:pointer;transition:background 140ms ease,border-color 140ms ease" style-hover="background:var(--raised);border-color:var(--border)">
+              <span style="font:400 11px/1 'JetBrains Mono',monospace;color:var(--t2)">{{ d.email }}</span>
+              <span style="font-size:11px;color:var(--t4)">{{ d.role }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ signedIn }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;min-height:0;min-width:1240px;display:flex;flex-direction:column">
+
+  <div style="height:46px;flex:none;display:flex;align-items:center;border-bottom:1px solid var(--line);background:var(--chrome);padding-right:12px;position:relative;z-index:30">
+    <div style="width:64px;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="16" height="16" viewBox="0 0 18 18"><rect x="1" y="10" width="3" height="7" rx="1" style="fill:var(--acc)"></rect><rect x="6" y="6" width="3" height="11" rx="1" style="fill:var(--acc2)"></rect><rect x="11" y="1" width="3" height="16" rx="1" style="fill:var(--accT3)"></rect></svg>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex:none">
+      <span style="font-size:12.5px;font-weight:600;letter-spacing:-0.005em;white-space:nowrap">Northwind Retail</span>
+      <svg width="9" height="9" viewBox="0 0 10 10" style="opacity:.45"><path d="M2 4l3 3 3-3" style="stroke:var(--t1)" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span style="width:1px;height:14px;background:var(--line3);margin:0 4px"></span>
+      <span style="display:inline-flex;align-items:center;gap:5px;font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3)">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--pos);animation:pwBreathe 3.4s ease-in-out infinite"></span>production
+      </span>
+    </div>
+
+    <div style="flex:1;display:flex;justify-content:center;padding:0 24px">
+      <button onClick="{{ openPalette }}" style="width:100%;max-width:400px;height:27px;display:flex;align-items:center;gap:8px;padding:0 8px 0 9px;background:var(--inset);border:1px solid var(--line3);border-radius:6px;cursor:pointer;transition:border-color 140ms ease,background 140ms ease" style-hover="border-color:var(--border);background:var(--hover)">
+        <svg width="11" height="11" viewBox="0 0 12 12" style="flex:none"><circle cx="5" cy="5" r="3.4" style="stroke:var(--t4)" stroke-width="1.2" fill="none"></circle><path d="M7.6 7.6L10 10" style="stroke:var(--t4)" stroke-width="1.2" stroke-linecap="round"></path></svg>
+        <span style="flex:1;text-align:left;font-size:11.5px;color:var(--t4)">Search products, decisions, activity…</span>
+        <span style="font:500 9.5px/1 'JetBrains Mono',monospace;color:var(--t4);border:1px solid var(--border);border-radius:3px;padding:3px 4px">⌘K</span>
+      </button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;flex:none">
+      <button onClick="{{ goDecisions }}" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;background:var(--accA);border:1px solid var(--accBorder);border-radius:5px;cursor:pointer;transition:background 140ms ease" style-hover="background:var(--accA2)">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--acc2)"></span>
+        <span style="font-size:11.5px;color:var(--accT2);font-weight:500">{{ pendingCount }} awaiting you</span>
+      </button>
+      <span style="width:1px;height:14px;background:var(--line3)"></span>
+      <div style="display:flex;align-items:center;gap:7px;cursor:pointer">
+        <span style="width:22px;height:22px;border-radius:5px;background:var(--avatarBg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--t2)">AA</span>
+        <svg width="9" height="9" viewBox="0 0 10 10" style="opacity:.45"><path d="M2 4l3 3 3-3" style="stroke:var(--t1)" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:flex">
+
+    <div style="width:64px;flex:none;border-right:1px solid var(--line);background:var(--chrome);display:flex;flex-direction:column;position:relative">
+      <div style="position:absolute;left:0;width:2px;height:24px;background:var(--acc2);border-radius:0 2px 2px 0;transition:top 220ms cubic-bezier(.2,.8,.2,1);top: {{ railTop }}px"></div>
+      <div style="padding-top:8px;display:flex;flex-direction:column">
+        <button onClick="{{ goOverview }}" style="height:52px;border:0;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:color 160ms ease;color: {{ cOverview }}" style-hover="color:var(--t1)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.2"></rect><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.2"></rect><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.2"></rect><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.2"></rect></svg>
+          <span style="font-size:9.5px;letter-spacing:.01em">Overview</span>
+        </button>
+        <button onClick="{{ goProducts }}" style="height:52px;border:0;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:color 160ms ease;color: {{ cProducts }}" style-hover="color:var(--t1)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path><circle cx="5.2" cy="4" r="1.5" style="fill:var(--chrome)" stroke="currentColor" stroke-width="1.2"></circle><circle cx="10" cy="8" r="1.5" style="fill:var(--chrome)" stroke="currentColor" stroke-width="1.2"></circle><circle cx="6.6" cy="12" r="1.5" style="fill:var(--chrome)" stroke="currentColor" stroke-width="1.2"></circle></svg>
+          <span style="font-size:9.5px">Products</span>
+        </button>
+        <button onClick="{{ goDecisions }}" style="height:52px;border:0;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;position:relative;transition:color 160ms ease;color: {{ cDecisions }}" style-hover="color:var(--t1)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.2"></rect><path d="M5.3 8.2l2 2 3.4-3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span style="font-size:9.5px">Decisions</span>
+          <span style="position:absolute;top:8px;right:13px;min-width:14px;height:14px;padding:0 3px;border-radius:7px;background:var(--acc);color:var(--onAcc);font:600 9px/14px 'JetBrains Mono',monospace;text-align:center">{{ pendingCount }}</span>
+        </button>
+        <button onClick="{{ goActivity }}" style="height:52px;border:0;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:color 160ms ease;color: {{ cActivity }}" style-hover="color:var(--t1)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1.5 8.5h3l1.6-4.6 2.3 8.2L10.3 8.5h4.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span style="font-size:9.5px">Activity</span>
+        </button>
+        <button onClick="{{ goSettings }}" style="height:52px;border:0;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:color 160ms ease;color: {{ cSettings }}" style-hover="color:var(--t1)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5h12M2 11h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path><circle cx="6" cy="5" r="2" style="fill:var(--chrome)" stroke="currentColor" stroke-width="1.2"></circle><circle cx="10.5" cy="11" r="2" style="fill:var(--chrome)" stroke="currentColor" stroke-width="1.2"></circle></svg>
+          <span style="font-size:9.5px">Settings</span>
+        </button>
+      </div>
+      <div style="flex:1"></div>
+      <div style="padding:0 0 10px;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px;border-radius:7px;background:var(--inset);border:1px solid var(--line2)">
+          <button onClick="{{ setLight }}" title="Light" style="width:20px;height:20px;border:0;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 150ms ease,color 150ms ease;background: {{ thLightBg }};color: {{ thLightC }}">
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.7" stroke="currentColor" stroke-width="1.2"></circle><path d="M7 1v1.4M7 11.6V13M1 7h1.4M11.6 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"></path></svg>
+          </button>
+          <button onClick="{{ setSystem }}" title="Match system" style="width:20px;height:20px;border:0;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 150ms ease,color 150ms ease;background: {{ thSysBg }};color: {{ thSysC }}">
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2.5" width="11" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.2"></rect><path d="M5 12.2h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path></svg>
+          </button>
+          <button onClick="{{ setDark }}" title="Dark" style="width:20px;height:20px;border:0;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 150ms ease,color 150ms ease;background: {{ thDarkBg }};color: {{ thDarkC }}">
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M11.6 8.6A5 5 0 015.4 2.4a5 5 0 106.2 6.2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></svg>
+          </button>
+        </div>
+        <button onClick="{{ signOut }}" title="Sign out" style="width:26px;height:26px;border:0;background:transparent;border-radius:5px;cursor:pointer;color:var(--t3);display:flex;align-items:center;justify-content:center;transition:color 140ms ease,background 140ms ease" style-hover="color:var(--t1);background:var(--hover)">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2.5H3.5a1 1 0 00-1 1v9a1 1 0 001 1H6M10 11l3-3-3-3M13 8H6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;position:relative;background:var(--bg)">
+
+      <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;min-width:0;overflow-y:auto">
+        <div style="position:relative;padding:34px 34px 6px;overflow:hidden">
+          <div style="position:absolute;left:-80px;top:-170px;width:680px;height:360px;pointer-events:none;background:radial-gradient(closest-side, var(--accA), transparent 72%)"></div>
+          <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:12.5px;color:var(--t3);margin-bottom:10px">Good afternoon, Ada</div>
+              <h1 style="margin:0;font-size:30px;line-height:1.08;letter-spacing:-0.033em;font-weight:600;color:var(--t0);text-wrap:pretty">{{ headline }}</h1>
+              <div style="margin-top:11px;font-size:13.5px;line-height:1.55;color:var(--t3);max-width:64ch">{{ headlineSub }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 13px 8px 11px;border-radius:9px;background:var(--panel);border:1px solid var(--line2);box-shadow:var(--shRow)">
+              <span style="position:relative;width:6px;height:6px;flex:none">
+                <span style="position:absolute;inset:0;border-radius:50%;background:var(--pos)"></span>
+                <span style="position:absolute;inset:0;border-radius:50%;background:var(--pos);animation:pwPing 3s cubic-bezier(0,0,.2,1) infinite"></span>
+              </span>
+              <div>
+                <div style="font:500 9px/1 'JetBrains Mono',monospace;letter-spacing:.15em;color:var(--t4);margin-bottom:6px">LAST SWEEP</div>
+                <div style="font-size:12px;color:var(--t2);white-space:nowrap">2m ago · <span style="font:400 12px 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums">1,284</span> prices read</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin:18px 34px 0;position:relative;z-index:5">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+            <span style="font:500 9px/1 'JetBrains Mono',monospace;letter-spacing:.17em;color:var(--t4);white-space:nowrap">INTELLIGENCE PULSE</span>
+            <span style="font-size:11px;color:var(--t4);white-space:nowrap">five specialists · continuous</span>
+          </div>
+          <div style="display:flex;border-radius:10px;background:var(--panel);border:1px solid var(--line2);box-shadow:var(--shRow)">
+            <sc-for list="{{ pulse }}" as="a" hint-placeholder-count="5">
+              <div onMouseEnter="{{ a.enter }}" onMouseLeave="{{ a.leave }}" style="flex:1;min-width:0;position:relative;padding:13px 15px 11px;transition:opacity 220ms ease,background 220ms ease;opacity: {{ a.opacity }};background: {{ a.bg }};border-left:1px solid {{ a.divider }}">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+                  <span style="position:relative;width:6px;height:6px;flex:none">
+                    <span style="position:absolute;inset:0;border-radius:50%;transition:background 500ms ease;background: {{ a.dot }}"></span>
+                    <span style="position:absolute;inset:0;border-radius:50%;background: {{ a.dot }};animation: {{ a.anim }}"></span>
+                  </span>
+                  <span style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--t2)">{{ a.key }}</span>
+                </div>
+                <div style="font-size:12px;transition:color 500ms ease;margin-bottom:6px;color: {{ a.stateColor }}">{{ a.state }}</div>
+                <div style="font:400 10.5px/1.4 'JetBrains Mono',monospace;color:var(--t4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.note }}</div>
+                <svg viewBox="0 0 120 22" preserveAspectRatio="none" style="width:100%;height:20px;margin-top:10px;display:block">
+                  <path fill="none" stroke-width="1.15" stroke-linejoin="round" stroke-linecap="round" style="stroke: {{ a.dot }};opacity:.75;transition:opacity 400ms ease" d="{{ a.spark }}"></path>
+                  <circle r="1.7" style="fill: {{ a.dot }}" cx="117" cy="{{ a.sparkY }}"></circle>
+                </svg>
+                <sc-if value="{{ a.hovered }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;width:286px;top:calc(100% + 9px);z-index:40;padding:12px 14px;border-radius:9px;background:var(--raised);border:1px solid var(--line3);box-shadow:var(--shPop);animation:pwRise 150ms cubic-bezier(.2,.8,.2,1);left: {{ a.popL }};right: {{ a.popR }}">
+                    <div style="font-size:12.5px;line-height:1.5;color:var(--t1);margin-bottom:10px">{{ a.signalText }}</div>
+                    <div style="display:flex;gap:14px;font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4);flex-wrap:wrap">
+                      <span>{{ a.stamp }}</span><span>{{ a.skus }}</span><span>{{ a.contrib }}</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:0">
+          <div style="flex:1;min-width:0;padding:22px 30px 40px 34px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px">
+              <span style="font-size:13px;font-weight:600;letter-spacing:-0.005em">Awaiting your decision</span>
+              <button onClick="{{ goDecisions }}" style="background:transparent;border:0;cursor:pointer;font-size:11.5px;color:var(--t3);padding:0;transition:color 140ms ease" style-hover="color:var(--accT2)">Open workspace →</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--t3);margin-bottom:12px">Ordered by the cost of getting it wrong, not by age.</div>
+
+            <div style="border-top:1px solid var(--line)">
+              <sc-for list="{{ attn }}" as="d" hint-placeholder-count="4">
+                <div onClick="{{ d.open }}" style="display:flex;align-items:center;gap:14px;padding:11px 8px 11px 0;border-bottom:1px solid var(--line2);cursor:pointer;transition:background 140ms ease" style-hover="background:var(--hover)">
+                  <span style="width:2px;height:26px;border-radius:2px;flex:none;background: {{ d.accent }}"></span>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:baseline;gap:8px">
+                      <span style="font-size:13px;font-weight:500;color:var(--t1);white-space:nowrap">{{ d.name }}</span>
+                      <span style="font:400 10px/1 'JetBrains Mono',monospace;color:var(--t3);white-space:nowrap">{{ d.sku }}</span>
+                    </div>
+                    <div style="font-size:11.5px;color:var(--t3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.why }}</div>
+                  </div>
+                  <div style="text-align:right;flex:none;width:150px">
+                    <div style="font:500 13px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--t1)">{{ d.recStr }}</div>
+                    <div style="font:400 10.5px/1 'JetBrains Mono',monospace;margin-top:5px;color:var(--t3)"><span style="text-decoration:line-through">{{ d.curStr }}</span> <span style="color: {{ d.deltaColor }}">{{ d.deltaStr }}</span></div>
+                  </div>
+                  <div style="flex:none;width:96px;text-align:right">
+                    <div style="font:500 11.5px/1 'JetBrains Mono',monospace;color: {{ d.confColor }}">{{ d.confStr }}</div>
+                    <div style="margin-top:6px;height:2px;background:var(--line);border-radius:2px;overflow:hidden;margin-left:auto;width:52px">
+                      <div style="height:100%;border-radius:2px;background: {{ d.confColor }};width: {{ d.confPct }}%"></div>
+                    </div>
+                  </div>
+                  <div style="flex:none;width:92px;text-align:right;font-size:11px;color: {{ d.flagColor }}">{{ d.flag }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="margin-top:34px;display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+              <span style="font-size:13px;font-weight:600;letter-spacing:-0.005em">Recent activity</span>
+              <button onClick="{{ goActivity }}" style="background:transparent;border:0;cursor:pointer;font-size:11.5px;color:var(--t3);padding:0;transition:color 140ms ease" style-hover="color:var(--accT2)">All activity →</button>
+            </div>
+            <div>
+              <sc-for list="{{ activityBrief }}" as="e" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line2)">
+                  <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);width:58px;flex:none">{{ e.time }}</span>
+                  <span style="width:5px;height:5px;border-radius:50%;flex:none;background: {{ e.dot }}"></span>
+                  <span style="font-size:12px;color:var(--t2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.text }}</span>
+                  <span style="font:400 9.5px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:var(--t4);flex:none">{{ e.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="width:282px;flex:none;border-left:1px solid var(--line);padding:22px 34px 40px 26px;align-self:stretch">
+            <div style="font:500 9.5px/1 'JetBrains Mono',monospace;letter-spacing:.16em;color:var(--t3);margin-bottom:18px">POSITION</div>
+            <sc-for list="{{ metrics }}" as="m" hint-placeholder-count="5">
+              <div style="padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line2)">
+                <div style="font-size:11.5px;color:var(--t3);margin-bottom:7px">{{ m.label }}</div>
+                <div style="font:500 22px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;color: {{ m.color }}">{{ m.value }}</div>
+                <div style="font-size:11px;color:var(--t3);margin-top:7px">{{ m.sub }}</div>
+              </div>
+            </sc-for>
+            <div style="font:400 11px/1.5 'JetBrains Mono',monospace;color:var(--t4)">Auto-execution at ≥ {{ thresholdStr }}<br />Max single change ±{{ maxChange }}%</div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isDecisions }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;display:flex">
+        <div style="width:376px;flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--chrome)">
+          <div style="padding:16px 18px 10px;flex:none">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+              <span style="font-size:13.5px;font-weight:600;letter-spacing:-0.008em">Decisions</span>
+              <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ pendingCount }} pending</span>
+            </div>
+            <div style="display:flex;gap:2px;background:var(--inset);border:1px solid var(--ctlHover);border-radius:6px;padding:2px">
+              <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+                <button onClick="{{ t.select }}" style="flex:1;height:22px;border:0;border-radius:4px;cursor:pointer;font-size:11px;transition:background 140ms ease,color 140ms ease;background: {{ t.bg }};color: {{ t.color }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <sc-if value="{{ hasBatch }}" hint-placeholder-val="{{ false }}">
+            <div style="margin:0 18px 8px;padding:7px 9px;border:1px solid var(--accBorder);background:var(--accA);border-radius:6px;display:flex;align-items:center;justify-content:space-between;animation:pwIn 180ms ease">
+              <span style="font-size:11.5px;color:var(--accT2)">{{ batchCount }} selected</span>
+              <div style="display:flex;gap:6px">
+                <button onClick="{{ clearBatch }}" style="height:22px;padding:0 8px;border:1px solid var(--border);background:transparent;border-radius:4px;color:var(--t3);font-size:11px;cursor:pointer">Clear</button>
+                <button onClick="{{ approveBatch }}" style="height:22px;padding:0 8px;border:0;background:var(--acc);border-radius:4px;color:var(--onAcc);font-size:11px;font-weight:500;cursor:pointer">Approve all</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:12px">
+            <sc-for list="{{ queue }}" as="d" hint-placeholder-count="5">
+              <div onClick="{{ d.select }}" style="display:flex;gap:10px;padding:11px 18px 11px 14px;border-bottom:1px solid var(--line2);cursor:pointer;position:relative;transition:background 150ms ease,opacity 220ms ease,max-height 260ms ease;background: {{ d.rowBg }};opacity: {{ d.rowOpacity }}" style-hover="background:var(--hover)">
+                <span style="position:absolute;left:0;top:0;bottom:0;width:2px;background: {{ d.selBar }}"></span>
+                <button onClick="{{ d.toggleBatch }}" style="width:13px;height:13px;flex:none;margin-top:2px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 140ms ease;border:1px solid {{ d.checkBorder }};background: {{ d.checkBg }}">
+                  <svg width="8" height="8" viewBox="0 0 10 10" style="opacity: {{ d.checkOpacity }}"><path d="M1.8 5.2l2.2 2.2 4.2-4.6" style="stroke:var(--onAcc)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                    <span style="font-size:12.5px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</span>
+                    <span style="font:500 12px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color: {{ d.deltaColor }};flex:none">{{ d.deltaStr }}</span>
+                  </div>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:5px">
+                    <span style="font:400 10px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ d.sku }}</span>
+                    <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);flex:none">{{ d.curStr }} → <span style="color:var(--t2)">{{ d.recStr }}</span></span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+                    <div style="flex:1;height:2px;background:var(--line);border-radius:2px;overflow:hidden">
+                      <div style="height:100%;border-radius:2px;transition:width 300ms ease;background: {{ d.confColor }};width: {{ d.confPct }}%"></div>
+                    </div>
+                    <span style="font:400 10px/1 'JetBrains Mono',monospace;color: {{ d.confColor }}">{{ d.confStr }}</span>
+                    <span style="font-size:10px;color:var(--t4)">{{ d.age }}</span>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ queueEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:60px 24px;text-align:center">
+                <div style="font-size:13px;color:var(--t3);margin-bottom:6px">Queue clear</div>
+                <div style="font-size:11.5px;color:var(--t3);line-height:1.6">Pricewise keeps watching. You'll be brought back in when something needs judgment.</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="flex:none;border-top:1px solid var(--line);padding:8px 18px;display:flex;gap:12px;font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4)">
+            <span>J/K move</span><span>A approve</span><span>M modify</span><span>R reject</span>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:0;overflow-y:auto;position:relative">
+          <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:26px 34px 120px;max-width:920px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ sel.sku }}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:var(--t6)"></span>
+              <span style="font-size:11.5px;color:var(--t3)">{{ sel.cat }}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:var(--t6)"></span>
+              <span style="font-size:11.5px;color:var(--t3)">recommended {{ sel.age }} ago</span>
+              <sc-if value="{{ sel.autoFlag }}" hint-placeholder-val="{{ false }}">
+                <span style="margin-left:4px;display:inline-flex;align-items:center;gap:5px;height:19px;padding:0 7px;border-radius:4px;background:var(--amberA);border:1px solid var(--amberBorder);font-size:10.5px;color:var(--amber2)">
+                  <span style="width:4px;height:4px;border-radius:50%;background:var(--amber)"></span>auto-executes in 2h
+                </span>
+              </sc-if>
+            </div>
+
+            <h2 style="margin:0 0 22px;font-size:23px;line-height:1.2;letter-spacing:-0.022em;font-weight:600;color:var(--t0)">{{ sel.name }}</h2>
+
+            <div style="display:flex;align-items:flex-end;gap:26px;padding:4px 0 24px;flex-wrap:wrap">
+              <div>
+                <div style="font-size:11px;color:var(--t4);margin-bottom:9px">Current</div>
+                <div style="font:400 19px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--t3)">{{ sel.curStr }}</div>
+              </div>
+              <svg width="46" height="34" viewBox="0 0 46 34" style="margin-bottom:-2px;overflow:visible">
+                <path fill="none" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="64" style="stroke: {{ sel.deltaColor }};opacity:.6;animation:pwTrace 520ms cubic-bezier(.2,.8,.2,1) forwards" d="{{ sel.trace }}"></path>
+                <circle r="2" cx="2" style="fill:var(--t5)" cy="{{ sel.traceY0 }}"></circle>
+                <circle r="2.6" cx="44" style="fill: {{ sel.deltaColor }}" cy="{{ sel.traceY1 }}"></circle>
+              </svg>
+              <div>
+                <div style="font-size:11px;color:var(--t4);margin-bottom:9px">Recommended</div>
+                <div style="display:flex;align-items:baseline;gap:13px">
+                  <span style="font:600 36px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-0.028em;color:var(--t0)">{{ sel.recStr }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:5px;font:500 14px/1 'JetBrains Mono',monospace;color: {{ sel.deltaColor }}">{{ sel.deltaStr }}</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:20px"></div>
+              <div style="min-width:248px">
+                <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px">
+                  <span style="font:600 18px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-0.015em;transition:color 260ms ease;color: {{ sel.confColor }}">{{ sel.confPctStr }}</span>
+                  <span style="font-size:12px;color:var(--t3);white-space:nowrap">{{ sel.confLabel }}</span>
+                </div>
+                <div style="position:relative;height:15px">
+                  <div style="position:absolute;left:0;right:0;top:6px;height:3px;border-radius:2px;background:var(--line)"></div>
+                  <div style="position:absolute;left:0;top:6px;height:3px;border-radius:2px;transition:width 420ms cubic-bezier(.2,.8,.2,1),background 260ms ease;background: {{ sel.confColor }};width: {{ sel.confPct }}%"></div>
+                  <div style="position:absolute;top:0;width:1px;height:15px;background:var(--t5);left: {{ sel.thPct }}%"></div>
+                  <div style="position:absolute;top:2px;width:7px;height:11px;border-radius:2px;margin-left:-3.5px;box-shadow:0 0 0 3px var(--bg);transition:left 420ms cubic-bezier(.2,.8,.2,1),background 260ms ease;background: {{ sel.confColor }};left: {{ sel.confPct }}%"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:9px;font:400 10px/1 'JetBrains Mono',monospace;color:var(--t5)">
+                  <span>{{ sel.confRaw }}</span>
+                  <span>auto-execute ≥ {{ thresholdStr }}</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--t3);margin-top:10px">{{ sel.confNote }}</div>
+              </div>
+            </div>
+
+            <div style="display:flex;padding:4px;margin-bottom:6px;border-radius:10px;background:var(--panel);border:1px solid var(--line2);box-shadow:var(--shRow);flex-wrap:wrap;gap:0">
+              <sc-for list="{{ sel.impact }}" as="i" hint-placeholder-count="4">
+                <div style="flex:1;min-width:182px;padding:13px 16px;border-radius:7px;transition:background 200ms ease,opacity 200ms ease;background: {{ i.bg }};opacity: {{ i.opacity }}">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+                    <span style="width:3px;height:3px;border-radius:50%;transition:background 200ms ease;background: {{ i.tick }}"></span>
+                    <span style="font-size:11px;color:var(--t3);white-space:nowrap">{{ i.label }}</span>
+                  </div>
+                  <div style="font:500 14px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color: {{ i.color }}">{{ i.value }}</div>
+                  <div style="font-size:11px;color:var(--t4);margin-top:8px">{{ i.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="padding:22px 0 6px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:13px;font-weight:600;letter-spacing:-0.005em">Why Pricewise recommends this</span>
+                <span style="font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4)">CONTRIBUTION</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--t3);margin-bottom:14px">Each specialist reports independently. Click a line for its inputs.</div>
+
+              <sc-for list="{{ sel.agents }}" as="a" hint-placeholder-count="5">
+                <div style="border-bottom:1px solid var(--line2)">
+                  <div onClick="{{ a.toggle }}" onMouseEnter="{{ a.enter }}" onMouseLeave="{{ a.leave }}" style="display:flex;gap:16px;padding:13px 10px 13px 10px;margin:0 -10px;border-radius:7px;cursor:pointer;position:relative;transition:background 160ms ease,opacity 160ms ease;background: {{ a.rowBg }};opacity: {{ a.rowOpacity }}">
+                    <span style="position:absolute;left:-10px;top:8px;bottom:8px;width:2px;border-radius:2px;transition:background 160ms ease;background: {{ a.rail }}"></span>
+                    <div style="width:104px;flex:none;display:flex;align-items:flex-start;gap:7px;padding-top:1px">
+                      <span style="width:5px;height:5px;border-radius:50%;margin-top:5px;flex:none;background: {{ a.dot }}"></span>
+                      <span style="font:500 10px/1.5 'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--t2)">{{ a.key }}</span>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:12.5px;line-height:1.55;color:var(--t1)">{{ a.line }}</div>
+                      <sc-if value="{{ a.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top:10px;padding:11px 13px;background:var(--inset);border:1px solid var(--line);border-radius:6px;animation:pwIn 160ms ease">
+                          <div style="font-size:12px;line-height:1.6;color:var(--t3)">{{ a.detail }}</div>
+                          <div style="margin-top:10px;display:flex;gap:18px;font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4);flex-wrap:wrap">
+                            <span>source {{ a.source }}</span><span>updated {{ a.updated }}</span><span>signal {{ a.signal }}</span>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+                    <div style="width:74px;flex:none;display:flex;align-items:center;gap:8px;padding-top:4px">
+                      <div style="flex:1;height:2px;background:var(--line);border-radius:2px;overflow:hidden">
+                        <div style="height:100%;border-radius:2px;background:var(--acc);opacity:.85;width: {{ a.wPct }}%"></div>
+                      </div>
+                      <span style="font:400 10px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ a.wStr }}</span>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="margin-top:20px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:7px;background:var(--inset)">
+              <svg width="13" height="13" viewBox="0 0 14 14" style="flex:none;margin-top:1px"><rect x="1.5" y="1.5" width="11" height="11" rx="3" style="stroke:var(--pos)" stroke-width="1.1" fill="none"></rect><path d="M4.4 7.2l1.9 1.9 3.4-4" style="stroke:var(--pos)" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <div style="font-size:12px;line-height:1.6;color:var(--t3)">{{ sel.risk }}</div>
+            </div>
+          </div>
+
+          <sc-if value="{{ modifying }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:0;right:0;bottom:56px;background:var(--inset);border-top:1px solid var(--border);padding:14px 34px;display:flex;align-items:center;gap:14px;animation:pwIn 180ms ease;z-index:5">
+              <span style="font-size:12px;color:var(--t3)">Set price</span>
+              <div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--input)">
+                <button onClick="{{ modDown }}" style="width:28px;height:30px;border:0;background:transparent;color:var(--t3);font-size:14px;cursor:pointer">−</button>
+                <input type="text" value="{{ modPrice }}" onChange="{{ setModPrice }}" style="width:110px;height:30px;border:0;background:transparent;text-align:center;color:var(--t0);font:500 14px/1 'JetBrains Mono',monospace;outline:none" />
+                <button onClick="{{ modUp }}" style="width:28px;height:30px;border:0;background:transparent;color:var(--t3);font-size:14px;cursor:pointer">+</button>
+              </div>
+              <span style="font-size:11.5px;color:var(--t3)">{{ modNote }}</span>
+              <div style="flex:1"></div>
+              <button onClick="{{ cancelModify }}" style="height:30px;padding:0 12px;border:1px solid var(--border);background:transparent;border-radius:6px;color:var(--t3);font-size:12px;cursor:pointer">Cancel</button>
+              <button onClick="{{ applyModify }}" style="height:30px;padding:0 14px;border:0;background:var(--acc);border-radius:6px;color:var(--onAcc);font-size:12px;font-weight:500;cursor:pointer">Approve at this price</button>
+            </div>
+          </sc-if>
+
+          <div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:var(--barBg);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 34px;z-index:6">
+            <button onClick="{{ approve }}" style="height:31px;padding:0 15px;border:0;border-radius:6px;background:var(--acc);color:var(--onAcc);font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 140ms ease" style-hover="background:var(--accHover)">
+              Approve<span style="font:500 9.5px/1 'JetBrains Mono',monospace;opacity:.7;border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:2px 4px">A</span>
+            </button>
+            <button onClick="{{ approveExecute }}" style="height:31px;padding:0 13px;border:1px solid var(--border);border-radius:6px;background:var(--ctl);color:var(--t1);font-size:12.5px;cursor:pointer;transition:background 140ms ease,border-color 140ms ease" style-hover="background:var(--ctlHover);border-color:var(--borderStrong)">Approve &amp; execute now</button>
+            <button onClick="{{ startModify }}" style="height:31px;padding:0 13px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--t3);font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:color 140ms ease,border-color 140ms ease" style-hover="color:var(--t1);border-color:var(--borderStrong)">
+              Modify<span style="font:500 9.5px/1 'JetBrains Mono',monospace;opacity:.6;border:1px solid var(--borderStrong);border-radius:3px;padding:2px 4px">M</span>
+            </button>
+            <div style="flex:1"></div>
+            <button onClick="{{ reject }}" style="height:31px;padding:0 13px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--t3);font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:color 140ms ease,border-color 140ms ease" style-hover="color:var(--neg);border-color:var(--negBorder)">
+              Reject<span style="font:500 9.5px/1 'JetBrains Mono',monospace;opacity:.6;border:1px solid var(--borderStrong);border-radius:3px;padding:2px 4px">R</span>
+            </button>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ noSel }}" hint-placeholder-val="{{ false }}">
+            <div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+              <div style="font-size:14px;color:var(--t3)">Nothing awaiting judgment</div>
+              <div style="font-size:12px;color:var(--t3);max-width:36ch;text-align:center;line-height:1.6">The five specialists are still running. You'll see the next decision here the moment one needs you.</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isProducts }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <div style="flex:none;padding:16px 26px 0;border-bottom:1px solid var(--line);background:var(--chrome)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+            <div style="display:flex;align-items:baseline;gap:14px">
+              <span style="font-size:13.5px;font-weight:600;letter-spacing:-0.008em">Products</span>
+              <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ productCount }} of 32 shown</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="display:flex;align-items:center;gap:7px;height:26px;padding:0 9px;background:var(--inset);border:1px solid var(--line3);border-radius:6px;width:230px">
+                <svg width="11" height="11" viewBox="0 0 12 12" style="flex:none"><circle cx="5" cy="5" r="3.4" style="stroke:var(--t4)" stroke-width="1.2" fill="none"></circle><path d="M7.6 7.6L10 10" style="stroke:var(--t4)" stroke-width="1.2" stroke-linecap="round"></path></svg>
+                <input type="text" value="{{ q }}" onChange="{{ setQ }}" placeholder="Filter by SKU or name" style="flex:1;min-width:0;border:0;background:transparent;color:var(--t1);font-size:11.5px;outline:none" />
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <sc-for list="{{ views }}" as="v" hint-placeholder-count="4">
+              <button onClick="{{ v.select }}" style="height:30px;border:0;background:transparent;cursor:pointer;font-size:12px;padding:0;position:relative;white-space:nowrap;transition:color 140ms ease;color: {{ v.color }}" style-hover="color:var(--t1)">
+                {{ v.label }}<span style="margin-left:6px;font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4)">{{ v.count }}</span>
+                <span style="position:absolute;left:0;right:0;bottom:0;height:1.5px;transition:background 180ms ease;background: {{ v.bar }}"></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow:auto">
+          <table style="width:100%;border-collapse:collapse;min-width:1000px">
+            <thead>
+              <tr style="position:sticky;top:0;z-index:2;background:var(--chrome)">
+                <th style="text-align:left;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 12px 9px 26px;border-bottom:1px solid var(--line)">SKU</th>
+                <th style="text-align:left;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--line)">PRODUCT</th>
+                <th style="text-align:right;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--line)">PRICE</th>
+                <th style="text-align:right;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--line)">MARKET</th>
+                <th style="text-align:left;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--line);width:132px">GAP</th>
+                <th style="text-align:right;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--line)">MARGIN</th>
+                <th style="text-align:right;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--line)">INVENTORY</th>
+                <th style="text-align:right;font:500 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.11em;color:var(--t3);font-weight:500;padding:9px 26px 9px 12px;border-bottom:1px solid var(--line)">RECOMMENDATION</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ productRows }}" as="p" hint-placeholder-count="14">
+                <tr onClick="{{ p.open }}" style="cursor:pointer;transition:background 120ms ease;background: {{ p.rowBg }}" style-hover="background:var(--inset)">
+                  <td style="padding:0 12px 0 26px;height:33px;border-bottom:1px solid var(--line2);font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t4);white-space:nowrap">{{ p.sku }}</td>
+                  <td style="padding:0 12px;height:33px;border-bottom:1px solid var(--line2);font-size:12.5px;color:var(--t1);white-space:nowrap">{{ p.name }}</td>
+                  <td style="padding:0 12px;height:33px;border-bottom:1px solid var(--line2);text-align:right;font:500 12px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--t1);white-space:nowrap">{{ p.priceStr }}</td>
+                  <td style="padding:0 12px;height:33px;border-bottom:1px solid var(--line2);text-align:right;font:400 12px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--t3);white-space:nowrap">{{ p.marketStr }}</td>
+                  <td style="padding:0 12px;height:33px;border-bottom:1px solid var(--line2)">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div style="width:56px;height:14px;position:relative;flex:none">
+                        <span style="position:absolute;left:50%;top:1px;bottom:1px;width:1px;background:var(--border)"></span>
+                        <span style="position:absolute;top:5px;height:4px;border-radius:1px;background: {{ p.gapColor }};left: {{ p.gapLeft }}%;width: {{ p.gapWidth }}%"></span>
+                      </div>
+                      <span style="font:400 11px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color: {{ p.gapColor }}">{{ p.gapStr }}</span>
+                    </div>
+                  </td>
+                  <td style="padding:0 12px;height:33px;border-bottom:1px solid var(--line2);text-align:right;font:400 11.5px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;color: {{ p.marginColor }}">{{ p.marginStr }}</td>
+                  <td style="padding:0 12px;height:33px;border-bottom:1px solid var(--line2);text-align:right;white-space:nowrap">
+                    <span style="font:400 11.5px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--t2)">{{ p.inv }}</span>
+                    <span style="font-size:10.5px;margin-left:7px;color: {{ p.invColor }}">{{ p.invState }}</span>
+                  </td>
+                  <td style="padding:0 26px 0 12px;height:33px;border-bottom:1px solid var(--line2);text-align:right;white-space:nowrap">
+                    <sc-if value="{{ p.hasRec }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:inline-flex;align-items:center;gap:9px">
+                        <span style="font:500 11.5px/1 'JetBrains Mono',monospace;color: {{ p.recColor }}">{{ p.recStr }}</span>
+                        <span style="font:400 11px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ p.recDelta }}</span>
+                        <span style="width:30px;height:2px;background:var(--line);border-radius:2px;overflow:hidden;display:inline-block">
+                          <span style="display:block;height:100%;border-radius:2px;background: {{ p.confColor }};width: {{ p.confPct }}%"></span>
+                        </span>
+                        <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color: {{ p.confColor }};width:26px;text-align:right">{{ p.confStr }}</span>
+                      </span>
+                    </sc-if>
+                    <sc-if value="{{ p.noRec }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-size:11.5px;color:var(--t3)">at target</span>
+                    </sc-if>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <sc-if value="{{ inspectOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:0;right:0;bottom:0;width:430px;background:var(--panel);border-left:1px solid var(--line3);box-shadow:var(--shPanel);overflow-y:auto;animation:pwDrawer 200ms cubic-bezier(.2,.8,.2,1);z-index:10">
+          <div style="position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);padding:15px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;z-index:2">
+            <div>
+              <div style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t4);margin-bottom:7px">{{ insp.sku }}</div>
+              <div style="font-size:16px;font-weight:600;letter-spacing:-0.015em;color:var(--t0)">{{ insp.name }}</div>
+            </div>
+            <button onClick="{{ closeInspect }}" style="width:24px;height:24px;flex:none;border:0;background:transparent;border-radius:5px;cursor:pointer;color:var(--t4);display:flex;align-items:center;justify-content:center;transition:background 140ms ease,color 140ms ease" style-hover="background:var(--hover);color:var(--t1)">
+              <svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            </button>
+          </div>
+
+          <div style="padding:18px 20px;border-bottom:1px solid var(--line)">
+            <div style="display:flex;flex-wrap:wrap;gap:16px 0">
+              <sc-for list="{{ insp.stats }}" as="s" hint-placeholder-count="6">
+                <div style="width:50%">
+                  <div style="font-size:11px;color:var(--t3);margin-bottom:6px">{{ s.label }}</div>
+                  <div style="font:500 13px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color: {{ s.color }}">{{ s.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="padding:18px 20px;border-bottom:1px solid var(--line)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+              <span style="font-size:12.5px;font-weight:600">Price history</span>
+              <span style="font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4)">90 DAYS</span>
+            </div>
+            <svg viewBox="0 0 390 96" style="width:100%;height:96px;display:block;overflow:visible">
+              <path d="{{ insp.marketPath }}" fill="none" style="stroke:var(--t5)" stroke-width="1.2" stroke-dasharray="3 3"></path>
+              <path d="{{ insp.ourArea }}" style="fill:var(--accA)" stroke="none"></path>
+              <path d="{{ insp.ourPath }}" fill="none" style="stroke:var(--acc2)" stroke-width="1.5" stroke-linejoin="round"></path>
+              <sc-for list="{{ insp.events }}" as="ev" hint-placeholder-count="2">
+                <circle r="3" stroke-width="1.4" style="fill:var(--panel);stroke:var(--amber)" cx="{{ ev.x }}" cy="{{ ev.y }}"></circle>
+              </sc-for>
+            </svg>
+            <div style="display:flex;gap:16px;margin-top:12px;font-size:10.5px;color:var(--t3)">
+              <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:1.5px;background:var(--acc2)"></span>our price</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:1.5px;background:var(--t6)"></span>market median</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;border:1.4px solid var(--amber)"></span>decision</span>
+            </div>
+          </div>
+
+          <sc-if value="{{ insp.hasRec }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:18px 20px;border-bottom:1px solid var(--line)">
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:12px">Active recommendation</div>
+            <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
+              <span style="font:400 13px/1 'JetBrains Mono',monospace;color:var(--t3);text-decoration:line-through">{{ insp.curStr }}</span>
+              <span style="font:600 20px/1 'JetBrains Mono',monospace;letter-spacing:-0.015em;color:var(--t0)">{{ insp.recStr }}</span>
+              <span style="font:500 12px/1 'JetBrains Mono',monospace;color: {{ insp.recColor }}">{{ insp.recDelta }}</span>
+            </div>
+            <sc-for list="{{ insp.agents }}" as="a" hint-placeholder-count="5">
+              <div style="display:flex;gap:11px;padding:8px 0;border-top:1px solid var(--line2)">
+                <span style="font:500 9.5px/1.6 'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--t4);width:78px;flex:none">{{ a.key }}</span>
+                <span style="font-size:11.5px;line-height:1.55;color:var(--t2);flex:1">{{ a.line }}</span>
+              </div>
+            </sc-for>
+            <button onClick="{{ goDecisions }}" style="margin-top:14px;width:100%;height:30px;border:1px solid var(--border);background:var(--ctl);border-radius:6px;color:var(--t1);font-size:12px;cursor:pointer;transition:background 140ms ease" style-hover="background:var(--ctlHover)">Open in decision workspace</button>
+          </div>
+          </sc-if>
+
+          <div style="padding:18px 20px 30px">
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:12px">Decision history</div>
+            <sc-for list="{{ insp.history }}" as="h" hint-placeholder-count="3">
+              <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--line2)">
+                <span style="font:400 10px/1.6 'JetBrains Mono',monospace;color:var(--t4);width:52px;flex:none">{{ h.when }}</span>
+                <span style="font-size:11.5px;line-height:1.55;color:var(--t3);flex:1">{{ h.text }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ isActivity }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <div style="flex:none;padding:16px 34px 12px;border-bottom:1px solid var(--line);background:var(--chrome)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:13px">
+            <span style="font-size:13.5px;font-weight:600;letter-spacing:-0.008em">Activity</span>
+            <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3)">append-only · {{ activityCount }} events</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ actFilters }}" as="f" hint-placeholder-count="5">
+              <button onClick="{{ f.select }}" style="height:24px;padding:0 10px;border-radius:5px;cursor:pointer;font-size:11.5px;transition:all 140ms ease;border:1px solid {{ f.border }};background: {{ f.bg }};color: {{ f.color }}">{{ f.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:40px">
+          <sc-for list="{{ activity }}" as="e" hint-placeholder-count="9">
+            <div>
+              <sc-if value="{{ e.isDay }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:16px 34px 7px;font:500 9.5px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--t4);background:var(--bg);position:sticky;top:0;z-index:1">{{ e.day }}</div>
+              </sc-if>
+              <sc-if value="{{ e.isEvent }}" hint-placeholder-val="{{ true }}">
+                <div style="border-bottom:1px solid var(--line2)">
+                  <div onClick="{{ e.toggle }}" style="display:flex;align-items:center;gap:14px;padding:10px 34px;cursor:pointer;transition:background 130ms ease" style-hover="background:var(--hover)">
+                    <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);width:52px;flex:none">{{ e.time }}</span>
+                    <span style="width:19px;height:19px;border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;background: {{ e.avatarBg }};color: {{ e.avatarColor }}">{{ e.avatar }}</span>
+                    <span style="flex:1;min-width:0;font-size:12.5px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.text }}</span>
+                    <span style="font:400 11px/1 'JetBrains Mono',monospace;color:var(--t3);flex:none">{{ e.value }}</span>
+                    <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;font:500 9.5px/1 'JetBrains Mono',monospace;letter-spacing:.06em;flex:none;background: {{ e.tagBg }};color: {{ e.tagColor }}">{{ e.tag }}</span>
+                    <svg width="10" height="10" viewBox="0 0 10 10" style="flex:none;opacity:.4;transition:transform 180ms ease;transform: {{ e.caret }}"><path d="M2 4l3 3 3-3" style="stroke:var(--t1)" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  </div>
+                  <sc-if value="{{ e.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:2px 34px 18px 100px;animation:pwIn 160ms ease">
+                      <div style="border:1px solid var(--line);border-radius:7px;background:var(--inset);padding:14px 16px">
+                        <div style="display:flex;flex-wrap:wrap;gap:16px 34px;margin-bottom:12px">
+                          <sc-for list="{{ e.fields }}" as="f" hint-placeholder-count="4">
+                            <div>
+                              <div style="font-size:10.5px;color:var(--t3);margin-bottom:6px">{{ f.label }}</div>
+                              <div style="font:400 11.5px/1 'JetBrains Mono',monospace;color: {{ f.color }}">{{ f.value }}</div>
+                            </div>
+                          </sc-for>
+                        </div>
+                        <div style="font-size:11.5px;line-height:1.6;color:var(--t3);padding-top:11px;border-top:1px solid var(--raised)">{{ e.reason }}</div>
+                        <div style="margin-top:11px;display:flex;gap:18px;font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4);flex-wrap:wrap">
+                          <span>{{ e.rawEvent }}</span><span>{{ e.eventId }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;overflow-y:auto">
+        <div style="max-width:780px;padding:30px 34px 60px">
+          <h1 style="margin:0 0 6px;font-size:22px;letter-spacing:-0.022em;font-weight:600;color:var(--t0)">Risk &amp; automation</h1>
+          <p style="margin:0 0 30px;font-size:13px;color:var(--t3);max-width:56ch">How much of the pricing decision you delegate, and the hard limits Pricewise may never cross.</p>
+
+          <div style="padding-bottom:26px;border-bottom:1px solid var(--line)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">
+              <span style="font-size:13.5px;font-weight:600;letter-spacing:-0.008em">Auto-execution threshold</span>
+              <span style="font:600 19px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--t0)">{{ thresholdStr }}</span>
+            </div>
+            <div style="font-size:12.5px;color:var(--t3);margin-bottom:20px">Confidence required for Pricewise to apply a price without asking you.</div>
+
+            <div style="position:relative;height:44px;margin-bottom:6px">
+              <div style="position:absolute;left:0;right:0;top:0;height:26px">
+                <sc-for list="{{ dist }}" as="b" hint-placeholder-count="20">
+                  <span style="position:absolute;bottom:0;width:3px;border-radius:1px;transition:background 200ms ease,height 200ms ease;left: {{ b.x }}%;height: {{ b.h }}px;background: {{ b.color }}"></span>
+                </sc-for>
+              </div>
+              <div onPointerDown="{{ thresholdDown }}" style="position:absolute;left:0;right:0;top:30px;height:14px;cursor:pointer">
+                <div style="position:absolute;left:0;right:0;top:6px;height:2px;background:var(--line3);border-radius:2px"></div>
+                <div style="position:absolute;left:0;top:6px;height:2px;background:var(--t6);border-radius:2px;width: {{ thresholdPct }}%"></div>
+                <div style="position:absolute;top:0;width:14px;height:14px;border-radius:50%;background:var(--t1);border:3px solid var(--acc);margin-left:-7px;box-shadow:var(--shThumb);transition:transform 100ms ease;left: {{ thresholdPct }}%"></div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font:400 10px/1 'JetBrains Mono',monospace;color:var(--t4);margin-bottom:16px">
+              <span>0.50 · everything asks you</span><span>1.00 · nothing auto-executes</span>
+            </div>
+
+            <div style="padding:13px 15px;border:1px solid var(--line);border-radius:7px;background:var(--inset)">
+              <div style="font-size:12.5px;line-height:1.6;color:var(--t2)">At <span style="font:500 12.5px 'JetBrains Mono',monospace;color:var(--t0)">{{ thresholdStr }}</span>, <span style="font:500 12.5px 'JetBrains Mono',monospace;color:var(--acc2)">{{ autoCount }} of your last 50</span> recommendations would have executed automatically — {{ autoPct }}% of decisions, worth {{ autoValue }} in price movement.</div>
+              <div style="font-size:11.5px;color:var(--t3);margin-top:9px">{{ thresholdAdvice }}</div>
+            </div>
+          </div>
+
+          <div style="padding:26px 0;border-bottom:1px solid var(--line)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">
+              <span style="font-size:13.5px;font-weight:600;letter-spacing:-0.008em">Maximum single price change</span>
+              <span style="font:600 19px/1 'JetBrains Mono',monospace;color:var(--t0)">±{{ maxChange }}%</span>
+            </div>
+            <div style="font-size:12.5px;color:var(--t3);margin-bottom:20px">A hard ceiling. No recommendation, approval or automation may exceed it.</div>
+
+            <div onPointerDown="{{ maxDown }}" style="position:relative;height:14px;cursor:pointer;margin-bottom:18px">
+              <div style="position:absolute;left:0;right:0;top:6px;height:2px;background:var(--line3);border-radius:2px"></div>
+              <div style="position:absolute;left:0;top:6px;height:2px;background:var(--t6);border-radius:2px;width: {{ maxPct }}%"></div>
+              <div style="position:absolute;top:0;width:14px;height:14px;border-radius:50%;background:var(--t1);border:3px solid var(--acc);margin-left:-7px;box-shadow:var(--shThumb);left: {{ maxPct }}%"></div>
+            </div>
+
+            <div style="padding:15px;border:1px solid var(--line);border-radius:7px;background:var(--inset)">
+              <div style="font-size:11.5px;color:var(--t3);margin-bottom:14px">Applied to Wireless Earbuds at {{ bandBase }}</div>
+              <div style="position:relative;height:30px">
+                <div style="position:absolute;left:0;right:0;top:13px;height:2px;background:var(--line);border-radius:2px"></div>
+                <div style="position:absolute;top:13px;height:2px;background:var(--accBand);border-radius:2px;left: {{ bandLeft }}%;width: {{ bandWidth }}%"></div>
+                <span style="position:absolute;top:8px;width:2px;height:12px;background:var(--t1);border-radius:1px;left:50%"></span>
+                <span style="position:absolute;top:0;font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);left: {{ bandLeft }}%;transform:translateX(-50%)">{{ bandLow }}</span>
+                <span style="position:absolute;bottom:0;font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);right:0">{{ bandHigh }}</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--t3);margin-top:10px">{{ bandNote }}</div>
+            </div>
+          </div>
+
+          <div style="padding:26px 0">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
+              <span style="font-size:13.5px;font-weight:600;letter-spacing:-0.008em">Team</span>
+              <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3)">2 members · 1 pending invite</span>
+            </div>
+            <sc-for list="{{ members }}" as="m" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line2)">
+                <span style="width:26px;height:26px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background: {{ m.avatarBg }};color: {{ m.avatarColor }}">{{ m.initials }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12.5px;color: {{ m.nameColor }}">{{ m.name }}</div>
+                  <div style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);margin-top:4px">{{ m.email }}</div>
+                </div>
+                <span style="font-size:11.5px;color:var(--t3)">{{ m.scope }}</span>
+                <span style="width:104px;text-align:right;font-size:11.5px;color:var(--t2)">{{ m.role }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;gap:8px;margin-top:16px">
+              <input type="text" placeholder="colleague@northwind.test" style="flex:1;height:31px;padding:0 10px;background:var(--input);border:1px solid var(--border);border-radius:6px;color:var(--t1);font-size:12px;outline:none;transition:border-color 140ms ease" style-focus="border-color:var(--focus)" />
+              <button style="height:31px;padding:0 13px;border:1px solid var(--border);background:var(--ctl);border-radius:6px;color:var(--t1);font-size:12px;cursor:pointer">Pricing Analyst ▾</button>
+              <button style="height:31px;padding:0 14px;border:0;background:var(--acc);border-radius:6px;color:var(--onAcc);font-size:12px;font-weight:500;cursor:pointer">Send invite</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ paletteOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closePalette }}" style="position:fixed;inset:0;background:var(--scrim);backdrop-filter:blur(3px);z-index:100;display:flex;justify-content:center;align-items:flex-start;padding-top:12vh">
+    <div onClick="{{ stop }}" style="width:100%;max-width:560px;background:var(--raised);border:1px solid var(--border);border-radius:11px;box-shadow:var(--shPop);overflow:hidden;animation:pwPal 140ms cubic-bezier(.2,.8,.2,1)">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;border-bottom:1px solid var(--line)">
+        <svg width="13" height="13" viewBox="0 0 12 12" style="flex:none"><circle cx="5" cy="5" r="3.4" style="stroke:var(--t4)" stroke-width="1.2" fill="none"></circle><path d="M7.6 7.6L10 10" style="stroke:var(--t4)" stroke-width="1.2" stroke-linecap="round"></path></svg>
+        <input type="text" autofocus="true" value="{{ pq }}" onChange="{{ setPq }}" placeholder="Search or jump to…" style="flex:1;border:0;background:transparent;color:var(--t0);font-size:14px;outline:none" />
+        <span style="font:500 9.5px/1 'JetBrains Mono',monospace;color:var(--t3);border:1px solid var(--border);border-radius:3px;padding:3px 4px">ESC</span>
+      </div>
+      <div style="max-height:44vh;overflow-y:auto;padding:6px">
+        <sc-for list="{{ paletteResults }}" as="r" hint-placeholder-count="6">
+          <div>
+            <sc-if value="{{ r.isGroup }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:10px 10px 5px;font:500 9.5px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--t4)">{{ r.group }}</div>
+            </sc-if>
+            <sc-if value="{{ r.isItem }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ r.run }}" style="display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background 110ms ease" style-hover="background:var(--hover)">
+                <span style="width:18px;height:18px;border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font:600 8.5px/1 'JetBrains Mono',monospace;background: {{ r.iconBg }};color: {{ r.iconColor }}">{{ r.icon }}</span>
+                <span style="flex:1;min-width:0;font-size:12.5px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.label }}</span>
+                <span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:var(--t3);flex:none">{{ r.hint }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ paletteEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:28px 10px;text-align:center;font-size:12.5px;color:var(--t3)">No matches for “{{ pq }}”</div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:120;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 14px;background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shCard);animation:pwToast 180ms cubic-bezier(.2,.8,.2,1)">
+    <span style="width:6px;height:6px;border-radius:50%;flex:none;background: {{ toast.dot }}"></span>
+    <span style="font-size:12.5px;color:var(--t1)">{{ toast.text }}</span>
+    <span style="font:400 11.5px/1 'JetBrains Mono',monospace;color:var(--t3)">{{ toast.value }}</span>
+    <button onClick="{{ undo }}" style="height:24px;padding:0 9px;border:1px solid var(--borderStrong);background:transparent;border-radius:5px;color:var(--accT2);font-size:11.5px;cursor:pointer;transition:background 140ms ease" style-hover="background:var(--accA)">Undo</button>
+  </div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;overview&quot;,&quot;products&quot;,&quot;decisions&quot;,&quot;activity&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;compact&quot;,&quot;comfortable&quot;],&quot;default&quot;:&quot;compact&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+class Component extends DCLogic {
+  state = {
+    signedIn: (this.props.startScreen || 'overview') !== 'signin',
+    view: ((this.props.startScreen || 'overview') === 'signin') ? 'overview' : (this.props.startScreen || 'overview'),
+    palette: false, pq: '', q: '', savedView: 'all', tab: 'pending',
+    selId: 'd5', resolved: {}, batch: {}, toast: null,
+    modifying: false, modPrice: '',
+    openAgent: {}, openEvent: {}, inspectSku: null,
+    threshold: 0.85, maxChange: 20,
+    authStep: 0, tick: 0, email: '', password: '',
+    theme: 'system', hoverAgent: null, actionState: null, rejectOpen: false, modNote: '',
+    animCur: null, animRec: null, palIdx: 0, recents: []
+  };
+
+  C = { text:'var(--t1)', dim:'var(--t3)', faint:'var(--t4)', ghost:'var(--t5)',
+        pos:'var(--pos)', neg:'var(--neg)', amber:'var(--amber)', accent:'var(--acc2)', accentDeep:'var(--acc)' };
+
+  AGENTS = [
+    { key:'MARKET', name:'Market Intelligence', note:'1,284 prices · 22 SKUs',
+      signal:'Competitor median moved −4.2% across Electronics. Three sellers repriced within the last hour.', stamp:'6m ago', skus:'22 SKUs', contrib:'0.31 mean weight' },
+    { key:'INVENTORY', name:'Inventory & Cost', note:'0 stockout risks',
+      signal:'Five SKUs are carrying more than 60 days of cover. No stockout risk in the next 30 days.', stamp:'1h ago', skus:'5 flagged', contrib:'0.26 mean weight' },
+    { key:'DEMAND', name:'Demand Forecasting', note:'elasticity refit 2m',
+      signal:'Elasticity refitted on 96 historical price moves. Apparel is the most responsive category at −1.9.', stamp:'2m ago', skus:'22 SKUs', contrib:'0.21 mean weight' },
+    { key:'STRATEGY', name:'Pricing Strategy', note:'5 candidates scored',
+      signal:'Five candidate prices scored per open recommendation against margin floor, cover and position.', stamp:'2m ago', skus:'5 decisions', contrib:'0.19 mean weight' },
+    { key:'COMPLIANCE', name:'Execution & Compliance', note:'policy v4 · 0 breaches',
+      signal:'One recommendation is blocked on a margin-floor breach. Everything else sits inside the ±20% band.', stamp:'live', skus:'1 blocked', contrib:'0.05 mean weight' }
+  ];
+
+  AGENT_IMPACT = { STRATEGY:0, MARKET:1, INVENTORY:2, DEMAND:3, COMPLIANCE:-1 };
+
+  sparkFor(i, level){
+    let h = ((i+1)*9173 + this.state.tick*137) >>> 0;
+    const amp = 2.5 + level/100*7, pts=[];
+    for(let k=0;k<=13;k++){ h=(h*1103515245+12345)>>>0; pts.push(((h>>>16)%1000)/1000); }
+    const y = (r)=>11 - (r-0.5)*2*amp;
+    return { d: pts.map((r,k)=>(k?'L':'M')+((k/13)*117+1).toFixed(1)+' '+y(r).toFixed(1)).join(' '), y: y(pts[13]).toFixed(1) };
+  }
+
+  STATES = [
+    { s:'monitoring', c:'var(--t3)', d:'var(--t6)', lv:22 },
+    { s:'signal detected', c:'var(--amber2)', d:'var(--amber)', lv:64 },
+    { s:'evaluating', c:'var(--accT)', d:'var(--acc)', lv:82 },
+    { s:'updated', c:'var(--pos2)', d:'var(--pos)', lv:100 },
+    { s:'healthy', c:'var(--t3)', d:'var(--pos)', lv:40 },
+    { s:'monitoring', c:'var(--t3)', d:'var(--t6)', lv:30 }
+  ];
+
+  DEC = [
+    { id:'d5', sku:'NW-APPA-0008', name:'Canvas Tote', cat:'Apparel', cur:135.03, rec:124.90, conf:0.88, age:'6h', auto:true,
+      impact:[
+        {label:'Margin', value:'58.8% → 55.4%', sub:'−$1,240 per 1k units', color:'var(--neg)'},
+        {label:'Competitive position', value:'−9.8% → −2.5%', sub:'moves to 3rd of 8 sellers', color:'var(--pos)'},
+        {label:'Inventory', value:'436u · 71d cover', sub:'clears to 44d at new rate', color:'var(--t1)'},
+        {label:'Demand', value:'+14.2% units', sub:'elasticity −1.9, high confidence', color:'var(--pos)'}
+      ],
+      risk:'Above your 0.85 auto-execution threshold — this will apply itself in 2 hours unless you act. Within the ±20% policy. No margin floor breach.',
+      agents:[
+        {key:'MARKET', line:'Competitor median settled at $121.75 after three sellers repriced last week.', detail:'8 tracked sellers. Median moved −9.8% against us over 14 days; dispersion is narrow, so the signal is clean rather than one outlier.', source:'crawler/retail-v6', updated:'4m ago', signal:'strong', w:0.31},
+        {key:'INVENTORY', line:'436 units on hand — 71 days of cover against a 21-day target.', detail:'Landed unit cost $55.63, stable for 90 days. Holding cost on the excess is roughly $310/month.', source:'erp.northwind', updated:'1h ago', signal:'strong', w:0.27},
+        {key:'DEMAND', line:'Elasticity of −1.9 in this band; a −7.5% move should lift units ~14%.', detail:'Fitted on 22 prior price moves for Apparel between $100 and $180. Residual error ±2.1pp.', source:'model/elastic-3', updated:'2m ago', signal:'moderate', w:0.22},
+        {key:'STRATEGY', line:'$124.90 closes 76% of the competitive gap and holds margin above the 52% floor.', detail:'$121.40 was rejected — it matches the median exactly but breaches the floor buffer. $128.90 was rejected as too slow against inventory cover.', source:'optimiser', updated:'2m ago', signal:'strong', w:0.14},
+        {key:'COMPLIANCE', line:'−7.5% sits inside the ±20% single-change policy. No hold required.', detail:'Policy v4, last edited by Ada Admin on 12 March. Two changes to this SKU in the last 30 days, under the limit of four.', source:'policy/v4', updated:'—', signal:'clear', w:0.06}
+      ]},
+    { id:'d1', sku:'NW-ELEC-0002', name:'Wireless Earbuds', cat:'Electronics', cur:790.77, rec:762.22, conf:0.81, age:'5d', auto:false,
+      impact:[
+        {label:'Margin', value:'38.2% → 36.9%', sub:'−1.3pp, above 32% floor', color:'var(--amber2)'},
+        {label:'Competitive position', value:'−11.0% → −2.1%', sub:'2nd of 8 sellers', color:'var(--pos)'},
+        {label:'Inventory', value:'248u · 34d cover', sub:'draws down to 26d', color:'var(--t1)'},
+        {label:'Demand', value:'+5.1% units', sub:'elasticity −1.4', color:'var(--pos)'}
+      ],
+      risk:'Within the ±20% policy. Margin stays 4.9pp above the floor. One prior change to this SKU in the last 30 days.',
+      agents:[
+        {key:'MARKET', line:'Competitor median fell to $703.75 — down 4.2% over seven days.', detail:'6 of 8 tracked sellers repriced. Largest single move −7.1% (Kestrel). The shift looks structural rather than promotional: no end dates published.', source:'crawler/retail-v6', updated:'6m ago', signal:'strong', w:0.34},
+        {key:'INVENTORY', line:'248 units on hand, 34 days of cover — healthy, no urgency from stock.', detail:'Unit cost $471.20, landed cost unchanged for 60 days. Next inbound shipment lands in 19 days.', source:'erp.northwind', updated:'1h ago', signal:'neutral', w:0.18},
+        {key:'DEMAND', line:'Demand is stable in this band; a −3.6% move lifts units roughly 5%.', detail:'Elasticity −1.4 fitted on 14 prior moves. Seasonality flat for the next three weeks.', source:'model/elastic-3', updated:'2m ago', signal:'moderate', w:0.21},
+        {key:'STRATEGY', line:'$762.22 closes 68% of the competitive gap while holding margin at 36.9%.', detail:'$749.90 would close the gap fully but lands 1.2pp from the floor buffer. $775.00 was scored lower: it leaves us visibly above two of the three largest sellers.', source:'optimiser', updated:'2m ago', signal:'strong', w:0.22},
+        {key:'COMPLIANCE', line:'−3.6% is well within the configured ±20% maximum adjustment.', detail:'Policy v4. Requires no second approver: the change is below the 10% dual-sign-off line.', source:'policy/v4', updated:'—', signal:'clear', w:0.05}
+      ]},
+    { id:'d2', sku:'NW-HOME-0012', name:'Cast Iron Skillet', cat:'Home', cur:246.94, rec:282.22, conf:0.79, age:'4d', auto:false,
+      impact:[
+        {label:'Margin', value:'12.0% → 23.0%', sub:'+11.0pp, clears risk flag', color:'var(--pos)'},
+        {label:'Competitive position', value:'+30.2% above median', sub:'moves to most expensive', color:'var(--neg)'},
+        {label:'Inventory', value:'437u · overstocked', sub:'cover extends to 96d', color:'var(--amber2)'},
+        {label:'Demand', value:'−8.4% units', sub:'elasticity −0.6, inelastic', color:'var(--amber2)'}
+      ],
+      risk:'Margin recovery, not competitiveness. This is the only recommendation in the queue that moves us further from the market — inspect the demand contribution before approving.',
+      agents:[
+        {key:'MARKET', line:'Competitor median is $189.68, but only two of eight sellers stock a comparable weight.', detail:'Thin comparison set. The two matching sellers are both marketplace resellers with inconsistent stock, so the median understates the true reference price.', source:'crawler/retail-v6', updated:'12m ago', signal:'weak', w:0.12},
+        {key:'INVENTORY', line:'437 units — overstocked, and unit cost rose 9% at the last purchase order.', detail:'Landed cost moved from $199.30 to $217.30 in February. At $246.94 the margin is 12.0%, below the 18% category floor.', source:'erp.northwind', updated:'1h ago', signal:'strong', w:0.38},
+        {key:'DEMAND', line:'Category is price-inelastic at −0.6; a +14% move costs roughly 8% of units.', detail:'Cast iron buyers show low substitution. Revenue effect is still positive: +4.9% at the recommended price.', source:'model/elastic-3', updated:'3m ago', signal:'moderate', w:0.26},
+        {key:'STRATEGY', line:'$282.22 restores margin to 23.0% while keeping revenue per unit positive.', detail:'Recommended despite the widening competitive gap. Margin floor breach is the binding constraint here, not market position.', source:'optimiser', updated:'3m ago', signal:'moderate', w:0.19},
+        {key:'COMPLIANCE', line:'+14.3% is within ±20%, but exceeds the 10% dual-sign-off line.', detail:'A second approver is required before execution. Ada Admin can self-approve as workspace owner.', source:'policy/v4', updated:'—', signal:'attention', w:0.05}
+      ]},
+    { id:'d3', sku:'NW-ELEC-0007', name:'Webcam Pro', cat:'Electronics', cur:1194.83, rec:1076.41, conf:0.78, age:'2d', auto:false,
+      impact:[
+        {label:'Margin', value:'10.0% → 0.2%', sub:'breaches 8% floor', color:'var(--neg)'},
+        {label:'Competitive position', value:'−15.6% → −4.9%', sub:'4th of 9 sellers', color:'var(--pos)'},
+        {label:'Inventory', value:'480u · overstocked', sub:'cover 118d → 71d', color:'var(--amber2)'},
+        {label:'Demand', value:'+11.7% units', sub:'elasticity −1.2', color:'var(--pos)'}
+      ],
+      risk:'This recommendation takes margin to 0.2%, below the 8% electronics floor. Strategy flagged it deliberately as an inventory-clearing trade. It cannot auto-execute at any threshold.',
+      agents:[
+        {key:'MARKET', line:'Competitor median $1,003.43 — we are 15.6% above the market and losing the buy box.', detail:'Nine tracked sellers. We have held the highest listed price for 23 consecutive days.', source:'crawler/retail-v6', updated:'8m ago', signal:'strong', w:0.29},
+        {key:'INVENTORY', line:'480 units, 118 days of cover. Unit cost $1,075.35 leaves almost no headroom.', detail:'This is a legacy purchase at an unfavourable cost. The overstock carries about $1,900/month in holding cost.', source:'erp.northwind', updated:'1h ago', signal:'strong', w:0.33},
+        {key:'DEMAND', line:'A −9.9% move should lift units ~12%, clearing 47 days of cover.', detail:'Elasticity −1.2. Confidence is lower than usual: only six prior moves in this price band.', source:'model/elastic-3', updated:'4m ago', signal:'moderate', w:0.20},
+        {key:'STRATEGY', line:'$1,076.41 trades margin for inventory. It is the cheapest exit from the overstock.', detail:'Scored against holding cost rather than margin. Alternative: hold price and write down 120 units, which scores worse over 90 days.', source:'optimiser', updated:'4m ago', signal:'moderate', w:0.13},
+        {key:'COMPLIANCE', line:'Margin floor breach — human approval mandatory, auto-execution blocked.', detail:'Electronics floor is 8.0%. Override must be recorded with a reason before the change can execute.', source:'policy/v4', updated:'—', signal:'blocking', w:0.05}
+      ]},
+    { id:'d4', sku:'NW-ELEC-0001', name:'Noise-Cancelling Headphones', cat:'Electronics', cur:390.16, rec:385.20, conf:0.74, age:'3d', auto:false,
+      impact:[
+        {label:'Margin', value:'41.8% → 41.0%', sub:'−0.8pp', color:'var(--t1)'},
+        {label:'Competitive position', value:'−2.6% → −1.3%', sub:'holds 2nd of 7', color:'var(--pos)'},
+        {label:'Inventory', value:'337u · 41d cover', sub:'unchanged', color:'var(--t1)'},
+        {label:'Demand', value:'+1.8% units', sub:'marginal', color:'var(--t3)'}
+      ],
+      risk:'Low impact either way. Rejecting costs an estimated $180/month. This is the kind of decision worth batching.',
+      agents:[
+        {key:'MARKET', line:'Competitor median $380.01 — we are only 2.6% above the market.', detail:'Seven tracked sellers, tight dispersion. No meaningful movement in the last 10 days.', source:'crawler/retail-v6', updated:'9m ago', signal:'weak', w:0.24},
+        {key:'INVENTORY', line:'337 units, 41 days of cover. Nothing in stock is forcing this.', detail:'Cost stable. No inbound shipment for 34 days.', source:'erp.northwind', updated:'1h ago', signal:'neutral', w:0.14},
+        {key:'DEMAND', line:'A −1.3% move is inside the noise floor of the demand model.', detail:'Predicted unit lift 1.8% ±2.4pp. The model cannot distinguish this from no change.', source:'model/elastic-3', updated:'5m ago', signal:'weak', w:0.18},
+        {key:'STRATEGY', line:'$385.20 is a defensive trim to stay under the nearest competitor.', detail:'Small expected value. Recommended mainly to avoid drifting above the median as others trim.', source:'optimiser', updated:'5m ago', signal:'weak', w:0.38},
+        {key:'COMPLIANCE', line:'Trivially within policy. No constraints engaged.', detail:'Policy v4. No approval escalation.', source:'policy/v4', updated:'—', signal:'clear', w:0.06}
+      ]}
+  ];
+
+  PROD = [
+    ['NW-ELEC-0007','Webcam Pro','Electronics',1194.83,1003.43,10.0,480,'overstocked',1076.41,0.78],
+    ['NW-ELEC-0002','Wireless Earbuds','Electronics',790.77,703.75,38.2,248,'normal',762.22,0.81],
+    ['NW-ELEC-0001','Noise-Cancelling Headphones','Electronics',390.16,380.01,41.8,337,'normal',385.20,0.74],
+    ['NW-HOME-0012','Cast Iron Skillet','Home',246.94,189.68,12.0,437,'overstocked',282.22,0.79],
+    ['NW-APPA-0008','Canvas Tote','Apparel',135.03,121.75,58.8,436,'overstocked',124.90,0.88],
+    ['NW-APPA-0010','Rain Shell Jacket','Apparel',128.00,129.27,39.6,50,'normal',null,null],
+    ['NW-APPA-0009','Merino Wool Scarf','Apparel',159.36,144.52,56.9,196,'normal',null,null],
+    ['NW-APPA-0007','Running Shorts','Apparel',160.76,145.12,36.2,247,'normal',null,null],
+    ['NW-APPA-0006','Cashmere Jumper','Apparel',124.42,127.78,38.8,13,'low',null,null],
+    ['NW-APPA-0005','Leather Belt','Apparel',15.08,13.65,36.1,328,'normal',null,null],
+    ['NW-APPA-0004','Chino Trousers','Apparel',26.69,27.35,56.4,87,'normal',null,null],
+    ['NW-APPA-0003','Oxford Shirt','Apparel',48.23,44.48,45.2,11,'low',null,null],
+    ['NW-APPA-0002','Packable Anorak','Apparel',41.24,41.79,42.9,98,'normal',null,null],
+    ['NW-APPA-0001','Alpaca Scarf','Apparel',188.19,174.10,50.9,397,'normal',null,null],
+    ['NW-HOME-0011','Electric Kettle','Home',115.88,100.08,35.8,46,'normal',null,null],
+    ['NW-HOME-0010','Toaster','Home',141.30,139.89,30.5,160,'normal',null,null],
+    ['NW-HOME-0009','Blender','Home',356.49,330.33,37.9,158,'normal',null,null],
+    ['NW-HOME-0008','Ceramic Dinner Set','Home',341.80,323.75,39.8,334,'normal',null,null],
+    ['NW-HOME-0007','Vacuum Flask','Home',248.38,234.23,45.8,458,'overstocked',null,null],
+    ['NW-HOME-0006','Stand Mixer','Home',335.07,310.20,29.9,476,'overstocked',null,null],
+    ['NW-HOME-0005','Knife Block Set','Home',289.38,289.88,45.2,228,'normal',null,null],
+    ['NW-HOME-0004','Air Fryer','Home',274.24,234.46,36.6,397,'normal',null,null]
+  ];
+
+  EVENTS = [
+    { day:'TODAY' },
+    { time:'14:22', actor:'AA', kind:'decision', text:'Ada modified the recommendation for Webcam Pro', value:'$1,076.41 → $1,099.00', tag:'MODIFIED', raw:'RECOMMENDATION_MODIFIED', id:'evt_8f41c2', reason:'Margin floor override declined. Price set 2.1% above the recommendation to hold margin at 2.3%.',
+      fields:[['Before','$1,194.83','var(--t3)'],['After','$1,099.00','var(--t1)'],['Actor','Ada Admin · Admin','var(--t1)'],['Recommendation','rec_2f9a11','var(--t3)']] },
+    { time:'14:22', actor:'PW', kind:'execution', text:'Pricewise executed an approved price change on Cast Iron Skillet', value:'$246.94 → $282.22', tag:'EXECUTED', raw:'PRICE_APPROVED_AND_EXECUTED', id:'evt_8f41bd', reason:'Approved by Ada Admin with second sign-off recorded. Change propagated to 3 storefronts in 1.4s.',
+      fields:[['Before','$246.94','var(--t3)'],['After','$282.22','var(--pos)'],['Actor','Pricewise · automation','var(--acc2)'],['Latency','1.42s','var(--t3)']] },
+    { time:'14:21', actor:'AN', kind:'decision', text:'Alan rejected a recommendation for Electric Kettle', value:'−13.6%', tag:'REJECTED', raw:'RECOMMENDATION_REJECTED', id:'evt_8f41a0', reason:'Rejected with reason: supplier rebate expected within 14 days, repricing now would lock in the wrong floor.',
+      fields:[['Proposed','$100.08','var(--t3)'],['Held at','$115.88','var(--t1)'],['Actor','Alan Analyst · Pricing Analyst','var(--t1)'],['Recommendation','rec_2f98e7','var(--t3)']] },
+    { time:'14:02', actor:'PW', kind:'execution', text:'Pricewise auto-executed a high-confidence change on Knife Block Set', value:'0.91 ≥ 0.85', tag:'AUTO', raw:'PRICE_AUTO_EXECUTED', id:'evt_8f3f12', reason:'Confidence 0.91 exceeded the 0.85 auto-execution threshold. No human review required under current policy.',
+      fields:[['Before','$289.38','var(--t3)'],['After','$281.10','var(--pos)'],['Confidence','0.91','var(--pos)'],['Policy','v4 · threshold 0.85','var(--t3)']] },
+    { time:'11:40', actor:'PW', kind:'market', text:'Market sweep completed across 22 tracked SKUs', value:'1,284 prices', tag:'MARKET', raw:'MARKET_EVENT_SIMULATED', id:'evt_8f2c77', reason:'Nine competitor catalogues refreshed. Three median shifts greater than 4% detected, generating two new recommendations.',
+      fields:[['Sellers','9','var(--t1)'],['Prices read','1,284','var(--t1)'],['Median shifts','3','var(--amber2)'],['New recommendations','2','var(--acc2)']] },
+    { day:'EARLIER' },
+    { time:'6d', actor:'AN', kind:'team', text:'Alan Analyst joined Northwind Retail as Pricing Analyst', value:'', tag:'TEAM', raw:'USER_JOINED', id:'evt_7a1102', reason:'Invitation accepted. Scope limited to Electronics and Home categories.',
+      fields:[['Role','Pricing Analyst','var(--t1)'],['Invited by','Ada Admin','var(--t3)'],['Scope','Electronics, Home','var(--t3)']] },
+    { time:'7d', actor:'AA', kind:'team', text:'Northwind Retail workspace created', value:'', tag:'SYSTEM', raw:'ORG_CREATED', id:'evt_79f001', reason:'Workspace provisioned with default policy v1. Auto-execution disabled until first review.',
+      fields:[['Owner','Ada Admin','var(--t1)'],['Plan','Enterprise','var(--t3)'],['Region','eu-west-1','var(--t3)']] }
+  ];
+
+  m(n){ return '$' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  pct(a,b){ const d=(b-a)/a*100; return (d>0?'+':'') + d.toFixed(1) + '%'; }
+  confColor(c){ return c>=0.85 ? this.C.pos : (c>=0.78 ? 'var(--t2)' : this.C.amber); }
+
+  applyTheme(t){
+    const th = t || this.state.theme;
+    const sys = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const eff = th === 'system' ? sys : th;
+    if(document && document.documentElement) document.documentElement.setAttribute('data-pw-theme', eff);
+  }
+  setTheme = (t) => { this.setState({theme:t}); this.applyTheme(t); };
+
+  componentDidMount(){
+    this.applyTheme();
+    this._mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    this._mqh = ()=>{ if(this.state.theme==='system') this.applyTheme(); };
+    if(this._mq && this._mq.addEventListener) this._mq.addEventListener('change', this._mqh);
+    this._a = setInterval(()=>{ if(!this.state.signedIn) this.setState(s=>({authStep:(s.authStep+1)%9})); }, 780);
+    this._t = setInterval(()=>this.setState(s=>({tick:s.tick+1})), 2400);
+    this._k = (e)=>{
+      const k = (e.key||'').toLowerCase();
+      if((e.metaKey||e.ctrlKey) && k==='k'){ e.preventDefault(); this.setState(s=>({palette:!s.palette,pq:''})); return; }
+      if(e.key==='Escape'){ this.setState({palette:false,inspectSku:null,modifying:false}); return; }
+      const tag = e.target && e.target.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA') return;
+      if(!this.state.signedIn || this.state.palette || this.state.view!=='decisions') return;
+      const list=this.pending(); const i=list.findIndex(d=>d.id===this.state.selId);
+      if(k==='j' && i<list.length-1) this.setState({selId:list[i+1].id});
+      else if(k==='k' && i>0) this.setState({selId:list[i-1].id});
+      else if(k==='a'){ e.preventDefault(); this.resolve(this.state.selId,'approved'); }
+      else if(k==='r'){ e.preventDefault(); this.resolve(this.state.selId,'rejected'); }
+      else if(k==='m'){ e.preventDefault(); this.startModify(); }
+    };
+    window.addEventListener('keydown', this._k);
+  }
+  componentWillUnmount(){ clearInterval(this._a); clearInterval(this._t); clearInterval(this._toastT); window.removeEventListener('keydown', this._k); }
+
+  componentDidUpdate(pp, ps){
+    if(ps.selId !== this.state.selId){
+      const from = this.DEC.find(d=>d.id===ps.selId), to = this.DEC.find(d=>d.id===this.state.selId);
+      if(from && to) this.tween(from.cur, from.rec, to.cur, to.rec);
+    }
+  }
+  tween(c0,r0,c1,r1){
+    cancelAnimationFrame(this._raf);
+    const t0 = performance.now(), dur = 300;
+    const step = (t)=>{ const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3);
+      if(p<1){ this.setState({animCur:c0+(c1-c0)*e, animRec:r0+(r1-r0)*e}); this._raf=requestAnimationFrame(step); }
+      else this.setState({animCur:null, animRec:null}); };
+    this._raf = requestAnimationFrame(step);
+  }
+
+  pending(){ return this.DEC.filter(d=>!this.state.resolved[d.id]); }
+  current(){ const p=this.pending(); return p.find(d=>d.id===this.state.selId) || p[0] || null; }
+
+  showToast(t){ clearTimeout(this._toastT); this.setState({toast:t}); this._toastT=setTimeout(()=>this.setState({toast:null}),4200); }
+
+  resolve(id, kind, price){
+    const d = this.DEC.find(x=>x.id===id); if(!d) return;
+    const list=this.pending(); const i=list.findIndex(x=>x.id===id);
+    const next = list[i+1] || list[i-1];
+    const r = Object.assign({}, this.state.resolved); r[id]=kind;
+    const b = Object.assign({}, this.state.batch); delete b[id];
+    this.setState({resolved:r, batch:b, modifying:false, selId: next?next.id:null});
+    const label = kind==='approved' ? 'Approved' : kind==='rejected' ? 'Rejected' : kind==='executed' ? 'Executed' : 'Modified and approved';
+    this.showToast({ text: label + ' · ' + d.name, value: kind==='rejected' ? 'held at '+this.m(d.cur) : this.m(price||d.rec), dot: kind==='rejected' ? this.C.neg : this.C.pos, id: id });
+  }
+
+  startModify = () => { const d=this.current(); if(d) this.setState({modifying:true, modPrice:d.rec.toFixed(2)}); };
+
+  slide(e, key, min, max, step){
+    const el = e.currentTarget; const rect = el.getBoundingClientRect();
+    const set = (cx)=>{ let r=(cx-rect.left)/rect.width; r=Math.max(0,Math.min(1,r));
+      let v=min+r*(max-min); v=Math.round(v/step)*step; this.setState({[key]: Number(v.toFixed(2))}); };
+    set(e.clientX);
+    const mv=(ev)=>set(ev.clientX);
+    const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); };
+    window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+  }
+
+  series(sku, base){
+    let h=0; for(let i=0;i<sku.length;i++) h=(h*31+sku.charCodeAt(i))>>>0;
+    const ours=[], mkt=[]; let v=base*1.09, mv=base*0.96;
+    for(let i=0;i<40;i++){
+      h=(h*1103515245+12345)>>>0; const r=((h>>>16)%1000)/1000-0.5;
+      h=(h*1103515245+12345)>>>0; const r2=((h>>>16)%1000)/1000-0.5;
+      v = v + (base-v)*0.06 + r*base*0.010;
+      mv = mv + (base*0.94-mv)*0.08 + r2*base*0.008;
+      ours.push(v); mkt.push(mv);
+    }
+    const all=ours.concat(mkt); const lo=Math.min.apply(null,all), hi=Math.max.apply(null,all);
+    const X=i=>(i/39)*386+2, Y=v=>90-((v-lo)/((hi-lo)||1))*80;
+    const path=(arr)=>arr.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
+    return { ourPath:path(ours), marketPath:path(mkt), ourArea:path(ours)+' L388 96 L2 96 Z',
+      events:[{x:X(14).toFixed(1),y:Y(ours[14]).toFixed(1)},{x:X(27).toFixed(1),y:Y(ours[27]).toFixed(1)},{x:X(36).toFixed(1),y:Y(ours[36]).toFixed(1)}] };
+  }
+
+  renderVals(){
+    const S=this.state, C=this.C;
+    const dense = (this.props.density||'compact')==='compact';
+    const pend = this.pending();
+    const cur = this.current();
+
+    // ---- sign in
+    const authAgents = this.AGENTS.map((a,i)=>{
+      const done = S.authStep > i, act = S.authStep === i;
+      return { key:a.key, name:a.name,
+        state: done?'complete':act?'analysing':'queued',
+        color: done? 'var(--t1)' : act? 'var(--t0)' : 'var(--t5)',
+        keyColor: done? 'var(--t4)' : act? 'var(--accT)' : 'var(--t6)',
+        stateColor: done? C.pos : act? 'var(--accT)' : 'var(--t6)',
+        dot: done? C.pos : act? 'var(--accT)' : 'var(--t6)',
+        dotBg: done? 'var(--posA)' : act? 'var(--accA2)' : 'transparent' };
+    });
+    const ready = S.authStep >= 5;
+
+    // ---- pulse
+    const pulse = this.AGENTS.map((a,i)=>{
+      const st = this.STATES[(S.tick + i*2) % this.STATES.length];
+      const sp = this.sparkFor(i, st.lv);
+      const hov = S.hoverAgent === a.key;
+      return { key:a.key, note:a.note, state:st.s, stateColor:st.c, dot:st.d, level:st.lv,
+        anim: st.s==='evaluating' ? 'pwPing 2.2s cubic-bezier(0,0,.2,1) infinite' : 'none',
+        spark:sp.d, sparkY:sp.y, hovered:hov,
+        opacity: S.hoverAgent && !hov ? 0.42 : 1,
+        bg: hov ? 'var(--hover)' : 'transparent',
+        divider: i===0 ? 'transparent' : 'var(--line2)',
+        popL: i<3 ? '10px' : 'auto', popR: i<3 ? 'auto' : '10px',
+        signalText:a.signal, stamp:a.stamp, skus:a.skus, contrib:a.contrib,
+        enter:()=>this.setState({hoverAgent:a.key}), leave:()=>this.setState({hoverAgent:null}) };
+    });
+
+    // ---- decisions
+    const decRow = (d)=>{
+      const cc=this.confColor(d.conf);
+      return { id:d.id, sku:d.sku, name:d.name, age:d.age,
+        curStr:this.m(d.cur), recStr:this.m(d.rec),
+        deltaStr:this.pct(d.cur,d.rec), deltaColor: d.rec<d.cur ? C.neg : C.pos,
+        confStr:Math.round(d.conf*100)+'%', confPct:Math.round(d.conf*100), confColor:cc,
+        rowBg: S.selId===d.id ? 'var(--sel)' : 'transparent',
+        selBar: S.selId===d.id ? C.accent : 'transparent',
+        rowOpacity: 1,
+        checkBg: S.batch[d.id] ? C.accentDeep : 'transparent',
+        checkBorder: S.batch[d.id] ? C.accentDeep : 'var(--border)',
+        checkOpacity: S.batch[d.id] ? 1 : 0,
+        select: ()=>this.setState({selId:d.id, modifying:false}),
+        toggleBatch: (e)=>{ e.stopPropagation(); const b=Object.assign({},S.batch); if(b[d.id]) delete b[d.id]; else b[d.id]=1; this.setState({batch:b}); } };
+    };
+
+    let sel = null;
+    if(cur){
+      const down = cur.rec < cur.cur;
+      const y0 = down ? 10 : 25, y1 = down ? 25 : 10;
+      const cc = this.confColor(cur.conf);
+      const hovKey = S.hoverAgent;
+      const hovIdx = hovKey ? this.AGENT_IMPACT[hovKey] : undefined;
+      sel = { sku:cur.sku, name:cur.name, cat:cur.cat, age:cur.age, autoFlag:!!cur.auto,
+        curStr:this.m(S.animCur!=null?S.animCur:cur.cur), recStr:this.m(S.animRec!=null?S.animRec:cur.rec),
+        deltaStr:this.pct(cur.cur,cur.rec), deltaColor: down ? C.neg : C.pos,
+        trace:'M2 '+y0+' C 17 '+y0+', 29 '+y1+', 44 '+y1, traceY0:y0, traceY1:y1,
+        confLabel: (cur.conf>=0.85?'high confidence':cur.conf>=0.78?'moderate confidence':'needs review'),
+        confPctStr: Math.round(cur.conf*100)+'%', confPct: Math.round(cur.conf*100), confColor: cc,
+        thPct: Math.round(S.threshold*100),
+        confRaw: cur.conf.toFixed(2)+' raw',
+        confNote: cur.conf>=S.threshold ? 'Clears the threshold — this will execute itself unless you intervene.' : 'Short of the threshold by '+Math.round((S.threshold-cur.conf)*100)+' points, so it waits for you.',
+        impact: cur.impact.map((im,ix)=>Object.assign({}, im, {
+          bg: hovKey && ix===hovIdx ? 'var(--accA)' : 'transparent',
+          opacity: hovKey ? (ix===hovIdx ? 1 : 0.42) : 1,
+          tick: hovKey && ix===hovIdx ? 'var(--acc2)' : 'var(--t6)' })),
+        risk: cur.risk,
+        agents: cur.agents.map((a,i)=>({ key:a.key, line:a.line, detail:a.detail, source:a.source, updated:a.updated, signal:a.signal,
+          wPct: Math.min(100, Math.round(a.w/0.4*100)), wStr:a.w.toFixed(2),
+          dot: a.signal==='strong'? C.pos : a.signal==='blocking'||a.signal==='attention' ? C.amber : a.signal==='weak' ? 'var(--t6)' : 'var(--t3)',
+          open: !!S.openAgent[cur.id+i],
+          rowBg: S.hoverAgent===a.key ? 'var(--hover)' : 'transparent',
+          rowOpacity: S.hoverAgent && S.hoverAgent!==a.key ? 0.5 : 1,
+          rail: S.hoverAgent===a.key ? 'var(--acc2)' : 'transparent',
+          enter: ()=>this.setState({hoverAgent:a.key}), leave: ()=>this.setState({hoverAgent:null}),
+          toggle: ()=>{ const o=Object.assign({},S.openAgent); const k=cur.id+i; if(o[k]) delete o[k]; else o[k]=1; this.setState({openAgent:o}); } })) };
+    }
+
+    const tabs = [['pending','Pending'],['approved','Approved'],['auto','Auto'],['rejected','Rejected']].map(([k,l])=>({
+      label:l, bg: S.tab===k?'var(--line3)':'transparent', color: S.tab===k?'var(--t1)':'var(--t3)', select:()=>this.setState({tab:k}) }));
+
+    // ---- products
+    const q=S.q.trim().toLowerCase();
+    const inView=(p)=>{
+      if(S.savedView==='rec') return p[8]!==null;
+      if(S.savedView==='over') return p[7]==='overstocked';
+      if(S.savedView==='risk') return p[5]<20 || p[7]==='low';
+      return true;
+    };
+    const rows = this.PROD.filter(p=>inView(p) && (!q || p[0].toLowerCase().includes(q) || p[1].toLowerCase().includes(q)));
+    const productRows = rows.map(p=>{
+      const gap=(p[4]-p[3])/p[3]*100;
+      const w=Math.min(Math.abs(gap),25)/25*50;
+      const cc = p[9]!==null ? this.confColor(p[9]) : 'var(--t6)';
+      return { sku:p[0], name:p[1], priceStr:this.m(p[3]), marketStr:this.m(p[4]),
+        gapStr:(gap>0?'+':'')+gap.toFixed(1)+'%', gapColor: gap<-5? C.neg : gap>0 ? C.pos : 'var(--t3)',
+        gapLeft: gap<0 ? 50-w : 50, gapWidth: w,
+        marginStr:p[5].toFixed(1)+'%', marginColor: p[5]<20 ? C.amber : 'var(--t2)',
+        inv:p[6], invState: p[7]==='normal'?'':p[7], invColor: p[7]==='low'? C.amber : p[7]==='overstocked'? 'var(--t3)' : 'var(--t3)',
+        hasRec: p[8]!==null, noRec: p[8]===null,
+        recStr: p[8]!==null?this.m(p[8]):'', recDelta: p[8]!==null?this.pct(p[3],p[8]):'',
+        recColor: p[8]!==null && p[8]<p[3] ? C.neg : C.pos,
+        confPct: p[9]!==null?Math.round(p[9]*100):0, confStr: p[9]!==null?Math.round(p[9]*100)+'':'', confColor:cc,
+        rowBg: S.inspectSku===p[0] ? 'var(--sel)' : 'transparent',
+        open: ()=>this.setState({inspectSku:p[0]}) };
+    });
+
+    const views=[['all','All products',this.PROD.length],['rec','Has recommendation',5],['over','Overstocked',5],['risk','Margin risk',4]].map(([k,l,c])=>({
+      label:l, count:c, color: S.savedView===k?'var(--t1)':'var(--t3)', bar: S.savedView===k?C.accent:'transparent', select:()=>this.setState({savedView:k}) }));
+
+    let insp={stats:[],events:[],agents:[],history:[],hasRec:false};
+    if(S.inspectSku){
+      const p=this.PROD.find(x=>x[0]===S.inspectSku);
+      if(p){
+        const s=this.series(p[0],p[3]);
+        const dec=this.DEC.find(d=>d.sku===p[0]);
+        const gap=(p[4]-p[3])/p[3]*100;
+        insp={ sku:p[0], name:p[1], hasRec:p[8]!==null,
+          curStr:this.m(p[3]), recStr: p[8]!==null?this.m(p[8]):'—', recDelta: p[8]!==null?this.pct(p[3],p[8]):'',
+          recColor: p[8]!==null && p[8]<p[3] ? C.neg : C.pos,
+          stats:[
+            {label:'Current price', value:this.m(p[3]), color:'var(--t0)'},
+            {label:'Competitor median', value:this.m(p[4]), color:'var(--t2)'},
+            {label:'Gap to market', value:(gap>0?'+':'')+gap.toFixed(1)+'%', color: gap<-5?C.neg:'var(--t2)'},
+            {label:'Margin', value:p[5].toFixed(1)+'%', color: p[5]<20?C.amber:'var(--t2)'},
+            {label:'Inventory', value:p[6]+' units', color:'var(--t2)'},
+            {label:'Demand index', value:(0.8+(p[3]%7)/10).toFixed(2), color:'var(--t2)'}
+          ],
+          ourPath:s.ourPath, marketPath:s.marketPath, ourArea:s.ourArea, events:s.events,
+          agents: dec ? dec.agents.map(a=>({key:a.key,line:a.line})) : [],
+          history:[
+            {when:'12 Mar', text:'Price held at '+this.m(p[3])+' — recommendation rejected by Alan Analyst'},
+            {when:'28 Feb', text:'Auto-executed at 0.89 confidence, '+this.m(p[3]*1.04)+' → '+this.m(p[3])},
+            {when:'09 Feb', text:'Market sweep repriced competitor median by −3.1%'}
+          ] };
+      }
+    }
+
+    // ---- activity
+    const af=[['all','All'],['decision','Decisions'],['execution','Executions'],['market','Market'],['team','Team']];
+    const actFilters = af.map(([k,l])=>({ label:l,
+      bg: S.savedView===null?'' : (S.actFilter||'all')===k?'var(--accA)':'transparent',
+      border: (S.actFilter||'all')===k?'var(--accBorder)':'var(--line3)',
+      color: (S.actFilter||'all')===k?'var(--accT2)':'var(--t3)',
+      select:()=>this.setState({actFilter:k}) }));
+    const afk = S.actFilter||'all';
+    const activity=[];
+    this.EVENTS.forEach((e,i)=>{
+      if(e.day){ activity.push({isDay:true,isEvent:false,day:e.day}); return; }
+      if(afk!=='all' && e.kind!==afk) return;
+      const tagMap={MODIFIED:['var(--amberA)','var(--amber2)'],EXECUTED:['var(--posA)','var(--pos2)'],REJECTED:['var(--negA)','var(--neg)'],AUTO:['var(--accA)','var(--accT)'],MARKET:['var(--line)','var(--t3)'],TEAM:['var(--line)','var(--t3)'],SYSTEM:['var(--line)','var(--t3)']};
+      const t=tagMap[e.tag]||['var(--line)','var(--t3)'];
+      activity.push({ isDay:false, isEvent:true, time:e.time, avatar:e.actor,
+        avatarBg: e.actor==='PW'?'var(--accA2)':'var(--line3)', avatarColor: e.actor==='PW'?'var(--accT)':'var(--t2)',
+        text:e.text, value:e.value, tag:e.tag, tagBg:t[0], tagColor:t[1],
+        open:!!S.openEvent[i], caret: S.openEvent[i]?'rotate(180deg)':'rotate(0deg)',
+        reason:e.reason, rawEvent:e.raw, eventId:e.id,
+        fields:(e.fields||[]).map(f=>({label:f[0],value:f[1],color:f[2]})),
+        toggle:()=>{ const o=Object.assign({},S.openEvent); if(o[i]) delete o[i]; else o[i]=1; this.setState({openEvent:o}); } });
+    });
+
+    // ---- settings
+    const confs=[0.91,0.88,0.87,0.86,0.85,0.84,0.83,0.82,0.81,0.81,0.80,0.79,0.79,0.78,0.78,0.77,0.76,0.76,0.75,0.74,0.74,0.73,0.72,0.71,0.71,0.70,0.69,0.68,0.68,0.67,0.66,0.66,0.65,0.64,0.63,0.62,0.62,0.61,0.60,0.59,0.93,0.90,0.89,0.86,0.84,0.82,0.80,0.77,0.73,0.69];
+    const autoCount = confs.filter(c=>c>=S.threshold).length;
+    const dist = confs.map((c,i)=>({ x: ((c-0.55)/0.45*100).toFixed(1), h: 6+((i*7)%12), color: c>=S.threshold ? C.accentDeep : 'var(--line3)' }));
+    const thresholdPct = ((S.threshold-0.5)/0.5*100).toFixed(1);
+    const base=790.77, low=base*(1-S.maxChange/100), high=base*(1+S.maxChange/100);
+
+    return {
+      signedIn:S.signedIn, signedOut:!S.signedIn,
+      isOverview:S.signedIn&&S.view==='overview', isProducts:S.signedIn&&S.view==='products',
+      isDecisions:S.signedIn&&S.view==='decisions', isActivity:S.signedIn&&S.view==='activity',
+      isSettings:S.signedIn&&S.view==='settings',
+
+      authAgents, authProgress: Math.min(S.authStep,5)+' of 5',
+      authReadyLabel: ready?'Recommendation ready':'Preparing recommendation…',
+      authReadyColor: ready?'var(--t1)':'var(--t5)',
+      authReadyBg: ready?'var(--posA)':'transparent',
+      authReadyOpacity: ready?1:0,
+      email:S.email, password:S.password,
+      setEmail:(e)=>this.setState({email:e.target.value}),
+      setPassword:(e)=>this.setState({password:e.target.value}),
+      signIn:()=>this.setState({signedIn:true,view:'overview'}),
+      signOut:()=>this.setState({signedIn:false,authStep:0}),
+      setLight:()=>this.setTheme('light'), setSystem:()=>this.setTheme('system'), setDark:()=>this.setTheme('dark'),
+      thLightBg: S.theme==='light'?'var(--ctl)':'transparent', thLightC: S.theme==='light'?'var(--t0)':'var(--t4)',
+      thSysBg: S.theme==='system'?'var(--ctl)':'transparent', thSysC: S.theme==='system'?'var(--t0)':'var(--t4)',
+      thDarkBg: S.theme==='dark'?'var(--ctl)':'transparent', thDarkC: S.theme==='dark'?'var(--t0)':'var(--t4)',
+      demoAccounts:[
+        {email:'admin@northwind.test', role:'Admin', use:()=>this.setState({email:'admin@northwind.test',password:'Pricewise2026!'})},
+        {email:'analyst@northwind.test', role:'Pricing Analyst', use:()=>this.setState({email:'analyst@northwind.test',password:'Pricewise2026!'})}
+      ],
+
+      pendingCount:pend.length,
+      goOverview:()=>this.setState({view:'overview',inspectSku:null}),
+      goProducts:()=>this.setState({view:'products'}),
+      goDecisions:()=>this.setState({view:'decisions',inspectSku:null}),
+      goActivity:()=>this.setState({view:'activity',inspectSku:null}),
+      goSettings:()=>this.setState({view:'settings',inspectSku:null}),
+      cOverview:S.view==='overview'?'var(--t0)':'var(--t4)',
+      cProducts:S.view==='products'?'var(--t0)':'var(--t4)',
+      cDecisions:S.view==='decisions'?'var(--t0)':'var(--t4)',
+      cActivity:S.view==='activity'?'var(--t0)':'var(--t4)',
+      cSettings:S.view==='settings'?'var(--t0)':'var(--t4)',
+      railTop: 8 + ['overview','products','decisions','activity','settings'].indexOf(S.view)*52 + 14,
+
+      pulse,
+      headline: pend.length ? pend.length+' decisions need your attention.' : 'Nothing needs your attention.',
+      headlineSub: pend.length ? (pend.some(d=>d.auto) ? 'One is above your auto-execution threshold and will apply itself in 2 hours.' : 'None of them clear your auto-execution threshold — each one needs a human.') : 'The specialists keep running. You will be brought back in when judgment is needed.',
+      metrics:[
+        {label:'Margin at stake in the queue', value:'$18,420', sub:'monthly, if every recommendation is approved', color:'var(--t0)'},
+        {label:'Executed automatically · 7d', value:'12', sub:'$6,110 of price movement, no review needed', color:'var(--t0)'},
+        {label:'Opportunities found today', value:'7', sub:'3 became recommendations, 4 below threshold', color:'var(--t0)'},
+        {label:'Mean confidence · 30d', value:'0.80', sub:'down 0.03 — market dispersion widening', color:'var(--amber2)'},
+        {label:'Products needing intervention', value:'3', sub:'margin floor or stock cover breach', color:'var(--neg)'}
+      ],
+      attn: pend.map(d=>{
+        const r=decRow(d);
+        return Object.assign(r,{ why: d.agents[0].line, accent: d.auto? C.amber : d.conf>=0.8 ? C.accent : 'var(--border)',
+          flag: d.auto ? 'auto in 2h' : d.conf>=0.8 ? '' : 'needs review',
+          flagColor: d.auto ? C.amber : 'var(--t4)',
+          open: ()=>this.setState({view:'decisions', selId:d.id}) });
+      }),
+      activityBrief: this.EVENTS.filter(e=>!e.day).slice(0,5).map(e=>({ time:e.time, text:e.text, tag:e.tag,
+        dot: e.tag==='EXECUTED'||e.tag==='AUTO' ? C.pos : e.tag==='REJECTED' ? C.neg : e.tag==='MODIFIED' ? C.amber : 'var(--t6)' })),
+      thresholdStr:S.threshold.toFixed(2), maxChange:S.maxChange,
+
+      queue: pend.map(decRow), queueEmpty: pend.length===0, tabs,
+      hasBatch: Object.keys(S.batch).length>0, batchCount: Object.keys(S.batch).length,
+      clearBatch:()=>this.setState({batch:{}}),
+      approveBatch:()=>{ const ids=Object.keys(S.batch); const r=Object.assign({},S.resolved); ids.forEach(i=>r[i]='approved');
+        const rest=this.DEC.filter(d=>!r[d.id]);
+        this.setState({resolved:r,batch:{},selId:rest[0]?rest[0].id:null});
+        this.showToast({text:'Approved '+ids.length+' recommendations', value:'batch', dot:C.pos, id:null}); },
+      hasSel: !!sel, noSel: !sel, sel,
+      approve:()=>cur&&this.resolve(cur.id,'approved'),
+      approveExecute:()=>cur&&this.resolve(cur.id,'executed'),
+      reject:()=>cur&&this.resolve(cur.id,'rejected'),
+      startModify:this.startModify,
+      cancelModify:()=>this.setState({modifying:false}),
+      applyModify:()=>cur&&this.resolve(cur.id,'modified',parseFloat(S.modPrice)),
+      modifying:S.modifying, modPrice:S.modPrice,
+      setModPrice:(e)=>this.setState({modPrice:e.target.value}),
+      modDown:()=>this.setState({modPrice:(parseFloat(S.modPrice||0)-0.5).toFixed(2)}),
+      modUp:()=>this.setState({modPrice:(parseFloat(S.modPrice||0)+0.5).toFixed(2)}),
+      modNote: cur ? ((parseFloat(S.modPrice)||cur.rec) < cur.cur ? this.pct(cur.cur, parseFloat(S.modPrice)||cur.rec)+' from current · within ±'+S.maxChange+'% policy' : this.pct(cur.cur, parseFloat(S.modPrice)||cur.rec)+' from current') : '',
+
+      q:S.q, setQ:(e)=>this.setState({q:e.target.value}),
+      views, productRows, productCount: productRows.length,
+      inspectOpen: !!S.inspectSku, insp,
+      closeInspect:()=>this.setState({inspectSku:null}),
+
+      actFilters, activity, activityCount: this.EVENTS.filter(e=>!e.day).length,
+
+      thresholdPct, autoCount, autoPct: Math.round(autoCount/50*100), autoValue:'$'+(autoCount*512).toLocaleString('en-US'),
+      thresholdAdvice: S.threshold>=0.9 ? 'Conservative. Almost everything comes to you — expect a slower queue.' : S.threshold>=0.8 ? 'Balanced. Routine trims execute; anything contested reaches a human.' : 'Aggressive. Moderate-confidence changes will apply without review.',
+      dist,
+      thresholdDown:(e)=>this.slide(e,'threshold',0.5,1.0,0.01),
+      maxDown:(e)=>this.slide(e,'maxChange',5,40,1),
+      maxPct: ((S.maxChange-5)/35*100).toFixed(1),
+      bandBase:this.m(base), bandLow:this.m(low), bandHigh:this.m(high),
+      bandLeft: (50-Math.min(S.maxChange,40)/40*50).toFixed(1), bandWidth: (Math.min(S.maxChange,40)/40*100).toFixed(1),
+      bandNote: 'Any recommendation outside this band is discarded before it reaches you, whatever its confidence.',
+      members:[
+        {initials:'AA', name:'Ada Admin', email:'admin@northwind.test', role:'Admin', scope:'All categories', avatarBg:'var(--avatarBg)', avatarColor:'var(--t2)', nameColor:'var(--t1)'},
+        {initials:'AN', name:'Alan Analyst', email:'analyst@northwind.test', role:'Pricing Analyst', scope:'Electronics, Home', avatarBg:'var(--line3)', avatarColor:'var(--t2)', nameColor:'var(--t1)'},
+        {initials:'—', name:'dara@northwind.test', email:'invited 2 days ago', role:'Viewer · pending', scope:'—', avatarBg:'var(--raised)', avatarColor:'var(--t4)', nameColor:'var(--t3)'}
+      ],
+
+      paletteOpen:S.palette, pq:S.pq,
+      openPalette:()=>this.setState({palette:true,pq:''}),
+      closePalette:()=>this.setState({palette:false}),
+      stop:(e)=>e.stopPropagation(),
+      setPq:(e)=>this.setState({pq:e.target.value}),
+      paletteResults: this.buildPalette(),
+      paletteEmpty: this.buildPalette().length===0,
+
+      hasToast: !!S.toast, toast: S.toast || {},
+      undo:()=>{ const r=Object.assign({},S.resolved); if(S.toast&&S.toast.id) delete r[S.toast.id]; clearTimeout(this._toastT);
+        this.setState({resolved:r, toast:null, selId: S.toast&&S.toast.id ? S.toast.id : S.selId}); }
+    };
+  }
+
+  buildPalette(){
+    const q=(this.state.pq||'').trim().toLowerCase();
+    const out=[];
+    const nav=[['Overview','overview','OV'],['Products','products','PR'],['Decisions','decisions','DC'],['Activity','activity','AC'],['Risk & automation','settings','ST']]
+      .filter(n=>!q||n[0].toLowerCase().includes(q));
+    if(nav.length){ out.push({isGroup:true,isItem:false,group:'GO TO'});
+      nav.forEach(n=>out.push({isGroup:false,isItem:true,label:n[0],icon:n[2],iconBg:'var(--line)',iconColor:'var(--t3)',hint:'jump',
+        run:()=>this.setState({view:n[1],palette:false,inspectSku:null})})); }
+    const decs=this.pending().filter(d=>!q||d.name.toLowerCase().includes(q)||d.sku.toLowerCase().includes(q));
+    if(decs.length){ out.push({isGroup:true,isItem:false,group:'DECISIONS'});
+      decs.forEach(d=>out.push({isGroup:false,isItem:true,label:d.name+' · '+this.pct(d.cur,d.rec),icon:'DC',
+        iconBg:'var(--accA2)',iconColor:'var(--accT)',hint:d.sku,
+        run:()=>this.setState({view:'decisions',selId:d.id,palette:false})})); }
+    const prods=this.PROD.filter(p=>q&&(p[1].toLowerCase().includes(q)||p[0].toLowerCase().includes(q))).slice(0,6);
+    if(prods.length){ out.push({isGroup:true,isItem:false,group:'PRODUCTS'});
+      prods.forEach(p=>out.push({isGroup:false,isItem:true,label:p[1],icon:'SK',iconBg:'var(--line)',iconColor:'var(--t3)',hint:p[0],
+        run:()=>this.setState({view:'products',inspectSku:p[0],palette:false})})); }
+    const acts=[['Approve all pending','approveAll'],['Sign out','signout']].filter(a=>!q||a[0].toLowerCase().includes(q));
+    if(acts.length){ out.push({isGroup:true,isItem:false,group:'ACTIONS'});
+      acts.forEach(a=>out.push({isGroup:false,isItem:true,label:a[0],icon:'→',iconBg:'var(--line)',iconColor:'var(--t3)',hint:'',
+        run:()=>{ if(a[1]==='signout') this.setState({signedIn:false,palette:false,authStep:0});
+          else { const r=Object.assign({},this.state.resolved); this.pending().forEach(d=>r[d.id]='approved');
+            this.setState({resolved:r,palette:false,selId:null}); this.showToast({text:'Approved all pending recommendations',value:'',dot:this.C.pos,id:null}); } }})); }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

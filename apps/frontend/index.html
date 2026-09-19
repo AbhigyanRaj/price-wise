@@ -20,13 +20,18 @@
       (function () {
         try {
           var stored = localStorage.getItem("pricewise-theme");
-          var dark =
-            stored === "dark" ||
+          // Dark is the design's default, so this resolves "is it light?" and
+          // the stylesheet needs no class at all for the common case.
+          var light =
+            stored === "light" ||
             ((!stored || stored === "system") &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches);
-          document.documentElement.classList.toggle("dark", dark);
+              !window.matchMedia("(prefers-color-scheme: dark)").matches);
+          // Both classes are set: `light` drives the token overrides, `dark`
+          // keeps Tailwind's dark: variants working in the shadcn primitives.
+          document.documentElement.classList.toggle("light", light);
+          document.documentElement.classList.toggle("dark", !light);
         } catch (e) {
-          /* no persisted preference available; fall through to light */
+          /* no persisted preference available; the sheet's dark default stands */
         }
       })();
     </script>
