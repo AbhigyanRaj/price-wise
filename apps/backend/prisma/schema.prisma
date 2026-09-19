@@ -44,7 +44,12 @@ enum AgentName {
 model Organization {
   id                  String   @id @default(uuid())
   name                String
-  confidenceThreshold Float    @default(0.85)
+  // 0.80, not the 0.85 this shipped with. Measured across 14 pipeline runs on
+  // seed data: median confidence 0.81, mean 0.789. At 0.85 only 7% of
+  // recommendations auto-execute, against a product target of 40 to 60%; at
+  // 0.80 it is 57%. The original figure was a hypothesis written before any
+  // run existed, and the data disagreed with it.
+  confidenceThreshold Float    @default(0.80)
   maxPriceDeltaPct    Float    @default(0.20)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

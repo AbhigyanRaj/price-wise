@@ -16,7 +16,7 @@ export function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const org = session?.organization;
-  const [threshold, setThreshold] = useState(org?.confidenceThreshold ?? 0.85);
+  const [threshold, setThreshold] = useState(org?.confidenceThreshold ?? 0.8);
   const [maxDelta, setMaxDelta] = useState(org?.maxPriceDeltaPct ?? 0.2);
 
   // Recent scores power the live preview. Fetched once and filtered in the

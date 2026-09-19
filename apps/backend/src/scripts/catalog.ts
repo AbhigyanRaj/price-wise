@@ -49,7 +49,7 @@ export const ORGS: SeedOrg[] = [
   {
     name: "Northwind Retail",
     slug: "NW",
-    confidenceThreshold: 0.85,
+    confidenceThreshold: 0.8,
     maxPriceDeltaPct: 0.2,
     users: [
       { email: "admin@northwind.test", name: "Ada Admin", role: "ADMIN" },

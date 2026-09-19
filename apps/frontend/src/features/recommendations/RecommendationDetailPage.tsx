@@ -41,7 +41,7 @@ export function RecommendationDetailPage() {
   }
 
   const isPendingDecision = rec.status === "PENDING";
-  const threshold = session?.organization.confidenceThreshold ?? 0.85;
+  const threshold = session?.organization.confidenceThreshold ?? 0.8;
   const breakdown = rec.factorWeights?.confidenceBreakdown ?? null;
 
   function reportError(err: unknown) {
