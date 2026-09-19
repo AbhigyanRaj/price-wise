@@ -4,7 +4,10 @@ import { logger } from "./lib/logger";
 
 const app = createApp();
 
-const server = app.listen(env.PORT, () => {
+// Host is explicit. Render requires the process to bind 0.0.0.0, and relying on
+// the runtime default is a portability assumption with a "no open ports
+// detected" deploy failure at the end of it.
+const server = app.listen(env.PORT, "0.0.0.0", () => {
   logger.info({ port: env.PORT, env: env.NODE_ENV }, "pricewise api listening");
 });
 
