@@ -3,7 +3,7 @@ import { AppError, notFound } from "../lib/errors";
 import * as recRepo from "../repositories/recommendation.repository";
 import * as productRepo from "../repositories/product.repository";
 import * as orgRepo from "../repositories/organization.repository";
-import * as categoryRuleRepo from "../repositories/categoryRule.repository";
+import { limitsForProduct } from "./categoryRule.service";
 import * as auditService from "./audit.service";
 import { executeRecommendation } from "./execution.service";
 import { logger } from "../lib/logger";
@@ -131,15 +131,19 @@ export async function modify(orgId: string, actorId: string, id: string, newPric
   const org = await orgRepo.findById(orgId);
   if (!org) throw notFound("Organization");
 
-  const categoryRule = await categoryRuleRepo.findForCategory(orgId, product.category);
+  const limits = await limitsForProduct(
+    orgId,
+    { category: product.category, marginFloorPct: product.marginFloorPct },
+    org.maxPriceDeltaPct,
+  );
 
   // A human is not exempt from the rule engine. They may override the AI's
   // judgement; they may not sell below cost.
   const violations = checkBusinessRules(newPrice, {
     currentPrice: Number(product.currentPrice),
     cost: Number(product.cost),
-    marginFloorPct: categoryRule?.marginFloorPct ?? product.marginFloorPct,
-    maxDeltaPct: categoryRule?.maxDeltaPct ?? org.maxPriceDeltaPct,
+    marginFloorPct: limits.marginFloorPct,
+    maxDeltaPct: limits.maxDeltaPct,
   });
 
   if (hasBlockingViolation(violations)) {

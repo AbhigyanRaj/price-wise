@@ -3,7 +3,7 @@ import { logger } from "../lib/logger";
 import * as productRepo from "../repositories/product.repository";
 import * as orgRepo from "../repositories/organization.repository";
 import * as recRepo from "../repositories/recommendation.repository";
-import * as categoryRuleRepo from "../repositories/categoryRule.repository";
+import { limitsForProduct } from "./categoryRule.service";
 import * as auditService from "./audit.service";
 import { checkBusinessRules, hasBlockingViolation } from "./businessRules";
 import * as mockPlatform from "./mockPlatform.service";
@@ -36,7 +36,11 @@ export async function executeRecommendation(
   const org = await orgRepo.findById(orgId);
   if (!org) throw notFound("Organization");
 
-  const categoryRule = await categoryRuleRepo.findForCategory(orgId, product.category);
+  const limits = await limitsForProduct(
+    orgId,
+    { category: product.category, marginFloorPct: product.marginFloorPct },
+    org.maxPriceDeltaPct,
+  );
   const previousPrice = Number(product.currentPrice);
 
   // The last deterministic gate before money is affected. The agents have
@@ -46,8 +50,8 @@ export async function executeRecommendation(
   const violations = checkBusinessRules(price, {
     currentPrice: previousPrice,
     cost: Number(product.cost),
-    marginFloorPct: categoryRule?.marginFloorPct ?? product.marginFloorPct,
-    maxDeltaPct: categoryRule?.maxDeltaPct ?? org.maxPriceDeltaPct,
+    marginFloorPct: limits.marginFloorPct,
+    maxDeltaPct: limits.maxDeltaPct,
   });
 
   if (hasBlockingViolation(violations)) {

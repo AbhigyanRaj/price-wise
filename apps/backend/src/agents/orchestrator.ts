@@ -4,7 +4,7 @@ import { logger } from "../lib/logger";
 import type { JsonValue } from "../lib/json";
 import * as productRepo from "../repositories/product.repository";
 import * as orgRepo from "../repositories/organization.repository";
-import * as categoryRuleRepo from "../repositories/categoryRule.repository";
+import { limitsForProduct } from "../services/categoryRule.service";
 import * as recRepo from "../repositories/recommendation.repository";
 import { checkBusinessRules, clampToPermittedRange, hasBlockingViolation } from "../services/businessRules";
 import { executeRecommendation } from "../services/execution.service";
@@ -38,9 +38,13 @@ export async function* orchestrate(
   if (!productRow) throw notFound("Product");
   if (!org) throw notFound("Organization");
 
-  const categoryRule = await categoryRuleRepo.findForCategory(orgId, productRow.category);
-  const effectiveFloorPct = categoryRule?.marginFloorPct ?? productRow.marginFloorPct;
-  const maxDeltaPct = categoryRule?.maxDeltaPct ?? org.maxPriceDeltaPct;
+  // One definition of "what limits apply here", shared with execution and the
+  // human-override path. A category rule tightens; it never loosens.
+  const { marginFloorPct: effectiveFloorPct, maxDeltaPct } = await limitsForProduct(
+    orgId,
+    { category: productRow.category, marginFloorPct: productRow.marginFloorPct },
+    org.maxPriceDeltaPct,
+  );
 
   const product: AgentProduct = {
     sku: productRow.sku,

@@ -24,7 +24,10 @@ export const CategoryRuleSchema = z.object({
   maxDeltaPct: z.number().min(0.01).max(1),
 });
 
+export const CategoryParamSchema = z.object({ category: z.string().min(1).max(64) });
+
 export type OrgSettingsPatch = z.infer<typeof OrgSettingsPatchSchema>;
 export type InviteCreate = z.infer<typeof InviteCreateSchema>;
 export type CategoryRuleInput = z.infer<typeof CategoryRuleSchema>;
+export type CategoryParam = z.infer<typeof CategoryParamSchema>;
 export type Role = z.infer<typeof RoleSchema>;
