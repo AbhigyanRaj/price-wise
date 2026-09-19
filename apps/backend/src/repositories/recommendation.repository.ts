@@ -104,6 +104,47 @@ export async function claimAndResolve(
   return prisma.pricingRecommendation.findFirst({ where: { id, organizationId: orgId }, include: LIST_INCLUDE });
 }
 
+/**
+ * Returns a resolved recommendation to PENDING.
+ *
+ * The mirror of claimAndResolve, and a conditional claim for the same reason:
+ * `status: { not: "PENDING" }` in the where clause means two undos race to one
+ * winner rather than both appearing to succeed.
+ *
+ * Bounded by time. An undo is a correction of a misclick, not an unlimited
+ * right to rewrite history: past the window the decision stands and the audit
+ * trail is the record.
+ */
+export async function claimAndUndo(
+  orgId: string,
+  id: string,
+  opts: { withinMs: number },
+) {
+  const cutoff = new Date(Date.now() - opts.withinMs);
+
+  const result = await prisma.pricingRecommendation.updateMany({
+    where: {
+      id,
+      organizationId: orgId,
+      status: { not: "PENDING" },
+      resolvedAt: { gte: cutoff },
+    },
+    data: {
+      status: "PENDING",
+      resolvedByUserId: null,
+      resolvedAt: null,
+      rejectionReason: null,
+      modifiedPrice: null,
+    },
+  });
+
+  if (result.count === 0) return null;
+  return prisma.pricingRecommendation.findFirst({
+    where: { id, organizationId: orgId },
+    include: LIST_INCLUDE,
+  });
+}
+
 export function createPending(
   orgId: string,
   productId: string,

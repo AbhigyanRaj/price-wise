@@ -77,3 +77,27 @@ export async function modify(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+
+export async function undo(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orgId, userId } = requireCtx(req);
+    const { recommendationId } = req.validated?.params as { recommendationId: string };
+    const restored = await recService.undo(orgId, userId, recommendationId);
+    res.json(ok(toRecommendationDTO(restored)));
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function batchApprove(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orgId, userId } = requireCtx(req);
+    const { ids } = req.validated?.body as { ids: string[] };
+    // Per-item results, not a throw on first failure: eight of ten succeeding
+    // is a different outcome from the whole thing failing, and the client has
+    // to be able to tell them apart.
+    res.json(ok(await recService.approveMany(orgId, userId, ids)));
+  } catch (err) {
+    next(err);
+  }
+}

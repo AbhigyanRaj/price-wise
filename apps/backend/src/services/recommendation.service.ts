@@ -6,6 +6,7 @@ import * as orgRepo from "../repositories/organization.repository";
 import * as categoryRuleRepo from "../repositories/categoryRule.repository";
 import * as auditService from "./audit.service";
 import { executeRecommendation } from "./execution.service";
+import { logger } from "../lib/logger";
 import { checkBusinessRules, hasBlockingViolation } from "./businessRules";
 
 /**
@@ -53,7 +54,15 @@ async function claim(orgId: string, id: string, to: RecStatus, data: Parameters<
   if (!existing) throw notFound("Recommendation");
 
   if (!canTransition(existing.status, to)) {
-    throw new AppError("CONFLICT", `Cannot move a ${existing.status} recommendation to ${to}`);
+    // Reads as a sentence: "already approved" beats "cannot move a APPROVED
+    // recommendation to APPROVED", which is both ungrammatical and phrased
+    // from the state machine's point of view rather than the user's.
+    throw new AppError(
+      "CONFLICT",
+      existing.status === to
+        ? `This recommendation is already ${to.toLowerCase().replace(/_/g, " ")}`
+        : `A recommendation that is ${existing.status.toLowerCase().replace(/_/g, " ")} cannot be ${to.toLowerCase().replace(/_/g, " ")}`,
+    );
   }
 
   const claimed = await recRepo.claimAndResolve(orgId, id, to, data);
@@ -175,4 +184,118 @@ export async function modify(orgId: string, actorId: string, id: string, newPric
 export async function thresholdPreview(orgId: string) {
   const rows = await recRepo.recentConfidenceScores(orgId, 20);
   return rows.map((r) => r.confidenceScore);
+}
+
+/**
+ * How long a decision stays reversible.
+ *
+ * Long enough to catch a misclick, short enough that the audit trail is the
+ * record of what happened rather than a suggestion. Ten minutes is a guess
+ * informed by nothing; it is a constant precisely so it is one line to change
+ * when there is evidence.
+ */
+export const UNDO_WINDOW_MS = 10 * 60 * 1000;
+
+/**
+ * Returns a resolved recommendation to the queue.
+ *
+ * This deliberately softens the one-way state machine, and it is worth being
+ * explicit about why. The machine is one-way so two analysts cannot both
+ * resolve the same item, not because a decision is sacred. An undo does not
+ * reintroduce that race: it is itself a conditional claim, so two undos
+ * resolve to one winner.
+ *
+ * What it must not do is erase anything. The original decision keeps its audit
+ * row and the reversal gets its own, so the trail reads "approved, then
+ * undone" rather than silently losing the approval. A correction that hides
+ * the thing it corrected is worse than no correction.
+ *
+ * An APPROVED or AUTO_EXECUTED recommendation already pushed a price, so the
+ * undo puts the previous price back through the same execution path, including
+ * its rollback. Undoing a rejection touches no price at all.
+ */
+export async function undo(orgId: string, actorId: string, id: string) {
+  const before = await recRepo.findById(orgId, id);
+  if (!before) throw new AppError("NOT_FOUND", "Recommendation not found");
+
+  const previousStatus = before.status;
+  if (previousStatus === "PENDING") {
+    throw new AppError("CONFLICT", "This recommendation is already waiting for a decision");
+  }
+
+  const restored = await recRepo.claimAndUndo(orgId, id, { withinMs: UNDO_WINDOW_MS });
+  if (!restored) {
+    throw new AppError(
+      "CONFLICT",
+      "This decision can no longer be undone. It was either already undone or resolved too long ago.",
+    );
+  }
+
+  // Only a status that moved a price needs the price moved back.
+  const priceWasPushed = previousStatus === "APPROVED" || previousStatus === "AUTO_EXECUTED" || previousStatus === "MODIFIED";
+  if (priceWasPushed) {
+    await executeRecommendation(
+      orgId,
+      id,
+      Number(before.currentPriceAtTime),
+      actorId,
+    ).catch((err: unknown) => {
+      // The status is already back to PENDING, which is the safe place for it
+      // to be. Surfacing this as a failure would be misleading: the undo
+      // succeeded, the storefront push did not.
+      logger.error({ err, recommendationId: id }, "undo reverted the status but not the price");
+    });
+  }
+
+  await auditService.record({
+    orgId,
+    userId: actorId,
+    action: "RECOMMENDATION_UNDONE",
+    entityType: "PricingRecommendation",
+    entityId: id,
+    beforeValue: { status: previousStatus },
+    afterValue: { status: "PENDING", restoredPrice: Number(before.currentPriceAtTime) },
+  });
+
+  return restored;
+}
+
+export interface BatchApproveResult {
+  id: string;
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Approves several at once.
+ *
+ * Sequential rather than parallel, and per-item rather than transactional.
+ * Each approval pushes a price to an external platform, so a transaction would
+ * be a lie: the database can roll back, the storefront cannot. Running them in
+ * sequence keeps the failure boundary at one item.
+ *
+ * Returns a result per id instead of throwing on the first failure, so eight
+ * of ten succeeding is visible as exactly that rather than as an error.
+ */
+export async function approveMany(
+  orgId: string,
+  actorId: string,
+  ids: string[],
+): Promise<BatchApproveResult[]> {
+  const results: BatchApproveResult[] = [];
+
+  for (const id of ids) {
+    try {
+      await approve(orgId, actorId, id);
+      results.push({ id, ok: true });
+    } catch (err) {
+      results.push({
+        id,
+        ok: false,
+        error: err instanceof AppError ? err.message : "Could not approve this recommendation",
+      });
+    }
+  }
+
+  return results;
 }

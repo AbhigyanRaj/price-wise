@@ -33,3 +33,12 @@ export const RecommendationIdParamSchema = z.object({ recommendationId: z.uuid()
 
 export type RecommendationQuery = z.infer<typeof RecommendationQuerySchema>;
 export type RecStatus = z.infer<typeof RecStatusSchema>;
+
+/** Bounded deliberately. Each id pushes a price to an external platform, so an
+ *  unbounded list is an unbounded number of outbound calls held open on one
+ *  request. Fifty is a full queue page and then some. */
+export const BatchApproveSchema = z.object({
+  ids: z.array(z.uuid()).min(1).max(50),
+});
+
+export type BatchApproveInput = z.infer<typeof BatchApproveSchema>;

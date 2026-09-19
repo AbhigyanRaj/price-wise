@@ -304,3 +304,87 @@ describe("GET /audit-logs", () => {
     expect(del.status).toBe(404);
   });
 });
+
+describe("undo", () => {
+  test("returns an approved recommendation to the queue and audits the reversal", async () => {
+    const rec = await seedPending(orgA, 299.99);
+    await api(server, "POST", `/recommendations/${rec.id}/approve`, undefined, orgA.analystJar);
+
+    const res = await api(server, "POST", `/recommendations/${rec.id}/undo`, undefined, orgA.analystJar);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as { data: { status: string; resolvedBy: unknown } };
+    expect(body.data.status).toBe("PENDING");
+    // The actor is cleared too: a pending item has not been resolved by anyone.
+    expect(body.data.resolvedBy).toBeNull();
+
+    const audit = await api(server, "GET", "/audit-logs?search=UNDONE", undefined, orgA.adminJar);
+    const trail = (await audit.json()) as { data: { action: string }[] };
+    // The approval row survives alongside it. A correction that hides what it
+    // corrected is worse than no correction.
+    expect(trail.data.some((e) => e.action === "RECOMMENDATION_UNDONE")).toBe(true);
+  });
+
+  test("undoing twice is a conflict, not a second undo", async () => {
+    const rec = await seedPending(orgA, 299.99);
+    await api(server, "POST", `/recommendations/${rec.id}/approve`, undefined, orgA.analystJar);
+    await api(server, "POST", `/recommendations/${rec.id}/undo`, undefined, orgA.analystJar);
+
+    const second = await api(server, "POST", `/recommendations/${rec.id}/undo`, undefined, orgA.analystJar);
+    expect(second.status).toBe(409);
+  });
+
+  test("another org cannot undo, and gets 404 rather than 403", async () => {
+    const rec = await seedPending(orgA, 299.99);
+    await api(server, "POST", `/recommendations/${rec.id}/approve`, undefined, orgA.analystJar);
+
+    const res = await api(server, "POST", `/recommendations/${rec.id}/undo`, undefined, orgB.analystJar);
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("batch approve", () => {
+  test("reports a result per id rather than failing on the first problem", async () => {
+    const good = await seedPending(orgA, 299.99);
+    const already = await seedPending(orgA, 310);
+    await api(server, "POST", `/recommendations/${already.id}/approve`, undefined, orgA.analystJar);
+
+    const res = await api(
+      server,
+      "POST",
+      "/recommendations/batch-approve",
+      { ids: [good.id, already.id] },
+      orgA.analystJar,
+    );
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as { data: { id: string; ok: boolean; error?: string }[] };
+    expect(body.data).toHaveLength(2);
+    // Partial success is the normal case and must be legible as such.
+    expect(body.data.find((r) => r.id === good.id)?.ok).toBe(true);
+    expect(body.data.find((r) => r.id === already.id)?.ok).toBe(false);
+    expect(body.data.find((r) => r.id === already.id)?.error).toBeTruthy();
+  });
+
+  test("another org's ids fail rather than resolving", async () => {
+    const mine = await seedPending(orgA, 299.99);
+    const theirs = await seedPending(orgB, 299.99);
+
+    const res = await api(
+      server,
+      "POST",
+      "/recommendations/batch-approve",
+      { ids: [mine.id, theirs.id] },
+      orgA.analystJar,
+    );
+
+    const body = (await res.json()) as { data: { id: string; ok: boolean }[] };
+    expect(body.data.find((r) => r.id === mine.id)?.ok).toBe(true);
+    expect(body.data.find((r) => r.id === theirs.id)?.ok).toBe(false);
+
+    // And theirs is untouched.
+    const check = await api(server, "GET", `/recommendations/${theirs.id}`, undefined, orgB.analystJar);
+    const found = (await check.json()) as { data: { status: string } };
+    expect(found.data.status).toBe("PENDING");
+  });
+});

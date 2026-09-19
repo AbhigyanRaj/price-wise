@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  BatchApproveSchema,
   ModifySchema,
   RecommendationIdParamSchema,
   RecommendationQuerySchema,
@@ -30,5 +31,16 @@ router.post(
   validate({ params: RecommendationIdParamSchema, body: ModifySchema }),
   ctrl.modify,
 );
+
+router.post(
+  "/:recommendationId/undo",
+  validate({ params: RecommendationIdParamSchema }),
+  ctrl.undo,
+);
+
+// No collision with the parameterised routes above: those are two segments
+// deep ("/:recommendationId/approve") and this is one, so Express cannot
+// confuse "batch-approve" for an id.
+router.post("/batch-approve", validate({ body: BatchApproveSchema }), ctrl.batchApprove);
 
 export default router;
