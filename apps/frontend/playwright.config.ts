@@ -29,7 +29,12 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
 
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
 
   // Reuse a server that is already up, so an interactive run does not fight
   // the dev server the developer is already looking at.

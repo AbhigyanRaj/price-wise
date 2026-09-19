@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Search, Sparkles } from "lucide-react";
 import {
   ConfidenceBadge,
@@ -14,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { DEFAULT_FILTERS, useCategories, useProducts, type CatalogFilters } from "./api";
+import { ProductFormDialog } from "./ProductFormDialog";
+import { DeleteProductDialog } from "./DeleteProductDialog";
+import { useAuth } from "@/features/auth/useAuth";
 import type { ProductDto } from "@/lib/types";
 
 type SortableColumn = CatalogFilters["sortBy"];
@@ -32,6 +36,7 @@ const COLUMNS: {
   { key: "margin", label: "Margin", numeric: true, width: "w-24" },
   { key: "inventory", label: "Inventory", numeric: true, sortBy: "inventoryLevel", width: "w-36" },
   { key: "rec", label: "Recommendation", width: "w-36" },
+  { key: "actions", label: "", width: "w-20" },
 ];
 
 export function CatalogPage() {
@@ -39,6 +44,13 @@ export function CatalogPage() {
   const { data, isPending, isError, error, refetch, isPlaceholderData } = useProducts(filters);
   const { data: categories } = useCategories();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+
+  // Hiding these is UX only. requireRole("ADMIN") rejects an analyst who
+  // crafts the request regardless of what this renders.
+  const [formFor, setFormFor] = useState<ProductDto | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [deleting, setDeleting] = useState<ProductDto | null>(null);
 
   const hasActiveFilters =
     filters.search !== "" || filters.category !== "" || filters.inventoryStatus !== "";
@@ -67,11 +79,25 @@ export function CatalogPage() {
             Every SKU in your organization, with its current market position.
           </p>
         </div>
-        {data && (
-          <span className="tnum shrink-0 text-xs text-ink-tertiary">
-            {data.pagination.totalCount} products
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-3">
+          {data && (
+            <span className="tnum text-xs text-ink-tertiary">
+              {data.pagination.totalCount} products
+            </span>
+          )}
+          {isAdmin && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setFormFor(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              Add product
+            </Button>
+          )}
+        </div>
       </header>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -174,6 +200,12 @@ export function CatalogPage() {
                   key={product.id}
                   product={product}
                   onOpen={() => navigate(`/products/${product.id}`)}
+                  isAdmin={isAdmin}
+                  onEdit={() => {
+                    setFormFor(product);
+                    setFormOpen(true);
+                  }}
+                  onDelete={() => setDeleting(product)}
                 />
               ))}
           </tbody>
@@ -237,11 +269,30 @@ export function CatalogPage() {
           </div>
         </nav>
       )}
+
+      <ProductFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        product={formFor ?? undefined}
+      />
+      <DeleteProductDialog product={deleting} onClose={() => setDeleting(null)} />
     </div>
   );
 }
 
-function ProductRow({ product, onOpen }: { product: ProductDto; onOpen: () => void }) {
+function ProductRow({
+  product,
+  onOpen,
+  isAdmin,
+  onEdit,
+  onDelete,
+}: {
+  product: ProductDto;
+  onOpen: () => void;
+  isAdmin: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const competitor = product.latestCompetitorPrice;
   // Our position relative to the market, computed here only for display. The
   // agents compute their own from the same source data.
@@ -299,6 +350,36 @@ function ProductRow({ product, onOpen }: { product: ProductDto; onOpen: () => vo
           <span className="text-xs text-ink-tertiary">none</span>
         )}
       </td>
+      <td className="px-3 text-right">
+        {isAdmin && (
+          <span className="inline-flex items-center gap-0.5">
+            <button
+              type="button"
+              aria-label={`Edit ${product.sku}`}
+              // The row itself is clickable and Enter-activated, so both of
+              // these must stop the event reaching it.
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="rounded-sm p-1 text-t4 transition-colors duration-[110ms] hover:bg-hover hover:text-t1"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label={`Delete ${product.sku}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="rounded-sm p-1 text-t4 transition-colors duration-[110ms] hover:bg-neg-a hover:text-neg"
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </span>
+        )}
+      </td>
     </tr>
   );
 }
@@ -306,7 +387,7 @@ function ProductRow({ product, onOpen }: { product: ProductDto; onOpen: () => vo
 /** Skeleton widths deliberately mirror the real columns, so nothing shifts
  *  when the data lands. A centred spinner would cause a visible jump. */
 function SkeletonRows() {
-  const widths = ["w-24", "w-48", "w-16", "w-24", "w-12", "w-20", "w-16"];
+  const widths = ["w-24", "w-48", "w-16", "w-24", "w-12", "w-20", "w-16", "w-10"];
 
   return (
     <>
