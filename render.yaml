@@ -1,0 +1,121 @@
+# Render Blueprint for the Pricewise API.
+#
+# Deployed from the repository root, not from apps/backend: the backend imports
+# @pricewise/shared through a Bun workspace link, which only resolves if the
+# install runs at the workspace root. There is deliberately no rootDir.
+#
+# There is no `runtime: bun` on Render. Bun ships on PATH in every native
+# runtime, so `runtime: node` plus bun commands is the supported pattern, with
+# BUN_VERSION pinned because the bundled default is older than the one this
+# project is built against.
+services:
+  - type: web
+    name: pricewise-api
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    autoDeploy: true
+
+    # /healthz pings the database, so a bad DATABASE_URL fails the deploy rather
+    # than shipping a service that 500s on the reviewer's first click.
+    healthCheckPath: /healthz
+
+    # NODE_ENV=development scopes to the install only. The service itself runs
+    # with NODE_ENV=production (below). Without this prefix Bun may read that as
+    # an implicit --production and skip devDependencies, which is where the
+    # prisma CLI lives, and the next line would die with "command not found".
+    #
+    # db:generate is mandatory on every deploy. Prisma 7 emits the client into
+    # apps/backend/src/generated/, which is gitignored, so it does not exist in
+    # a fresh checkout and nothing can even import it.
+    #
+    # db:deploy is an idempotent safety net. Migrations are applied by hand
+    # before the first deploy, so this normally reports nothing to do; it exists
+    # so a later deploy carrying a new migration cannot ship against an old
+    # schema. It resolves DIRECT_URL through prisma.config.ts, never the
+    # transaction pooler.
+    #
+    # db:seed is deliberately absent. The seed truncates before inserting, so a
+    # redeploy triggered mid-demo would wipe the reviewer's session.
+    buildCommand: >-
+      NODE_ENV=development bun install --frozen-lockfile &&
+      bun run --cwd apps/backend db:generate &&
+      bun run --cwd apps/backend db:deploy
+
+    startCommand: bun run --cwd apps/backend start
+
+    envVars:
+      # ---- Toolchain ----------------------------------------------------
+      - key: BUN_VERSION
+        value: "1.3.14"
+      - key: NODE_VERSION
+        value: "24"
+
+      # ---- Runtime ------------------------------------------------------
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: LOG_LEVEL
+        value: info
+
+      # ---- Database (pasted at Blueprint creation) ----------------------
+      # DATABASE_URL = Supabase "Transaction pooler", port 6543
+      # DIRECT_URL   = Supabase "Session pooler",     port 5432
+      #
+      # NOT the "Direct connection" host despite the variable name: that one is
+      # IPv6-only on current free projects and Render has no outbound IPv6, so
+      # connections hang and then fail.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+
+      # ---- Auth ---------------------------------------------------------
+      # Pasted rather than `generateValue: true`: lib/env.ts enforces min(32)
+      # and Render's generated length is not contractual. A boot crash on a
+      # short secret is not worth saving one paste.
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: ACCESS_TOKEN_TTL
+        value: 15m
+      - key: REFRESH_TOKEN_TTL_DAYS
+        value: "7"
+
+      # Drives both `secure` and `sameSite: "none"` in lib/cookies.ts. The
+      # Vercel/Render split is cross-site, so the cookie is dropped without it.
+      - key: COOKIE_SECURE
+        value: "true"
+
+      # Exact origin, compared with ===. No trailing slash, no path. Edit this
+      # in the repository rather than the dashboard: a Blueprint sync reverts
+      # dashboard edits to literal `value:` entries.
+      - key: CORS_ORIGIN
+        value: https://REPLACE-WITH-VERCEL-DOMAIN.vercel.app
+
+      # ---- AI -----------------------------------------------------------
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL_FAST
+        value: openai/gpt-oss-20b
+      - key: GROQ_MODEL_STRONG
+        value: openai/gpt-oss-120b
+      # 30s is the local default. Groq round trips plus free-tier queueing make
+      # that tight for the strong model from a remote region; 45s costs nothing
+      # when calls succeed and prevents a spurious agent failure on demo day.
+      - key: AGENT_TIMEOUT_MS
+        value: "45000"
+      - key: AGENT_MAX_RETRIES
+        value: "2"
+
+      # ---- Mock platform ------------------------------------------------
+      # 0, not the 0.1 default. A random rollback during a live demo reads as a
+      # bug rather than as a feature. Set to "1" in the dashboard to demonstrate
+      # the rollback path deliberately.
+      - key: MOCK_PLATFORM_FAILURE_RATE
+        value: "0"
+      - key: MOCK_PLATFORM_LATENCY_MS
+        value: "400"
