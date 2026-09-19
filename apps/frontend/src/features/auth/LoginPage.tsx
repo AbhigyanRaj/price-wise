@@ -6,8 +6,7 @@ import { LoginSchema, type LoginInput } from "@pricewise/shared";
 import { api, ApiError } from "@/lib/api";
 import { useAuth, SESSION_QUERY_KEY } from "./useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field } from "@/components/form/Field";
 import { FullPageSpinner } from "@/components/data/States";
 import { PipelinePreview } from "./PipelinePreview";
 import type { SessionDto } from "@/lib/types";
@@ -190,38 +189,6 @@ export function LoginPage() {
           </div>
         </div>
       </main>
-    </div>
-  );
-}
-
-interface FieldProps {
-  id: string;
-  label: string;
-  type: string;
-  autoComplete: string;
-  error?: string | undefined;
-  register: ReturnType<ReturnType<typeof useForm<LoginInput>>["register"]>;
-}
-
-function Field({ id, label, type, autoComplete, error, register }: FieldProps) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type={type}
-        autoComplete={autoComplete}
-        aria-invalid={error ? true : undefined}
-        // Programmatically associated, so a screen reader reads the error with
-        // the field rather than leaving it stranded elsewhere in the DOM.
-        aria-describedby={error ? `${id}-error` : undefined}
-        {...register}
-      />
-      {error && (
-        <p id={`${id}-error`} className="text-[12px] text-down">
-          {error}
-        </p>
-      )}
     </div>
   );
 }
