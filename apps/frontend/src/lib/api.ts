@@ -6,7 +6,24 @@
  * file deals in plain data and typed errors.
  */
 
-const BASE = "/api";
+/**
+ * The one place the API origin is decided.
+ *
+ * Development: VITE_API_URL is unset, so this is "/api". The Vite dev proxy
+ * forwards that to localhost:4000 and strips the prefix, which keeps the
+ * browser on a single origin and the auth cookies first-party.
+ *
+ * Production: VITE_API_URL is the Render origin, with no trailing slash and no
+ * path, because the API mounts "/auth" and "/products" at the root. Both cases
+ * therefore produce a correct URL from the same `${BASE}${path}` template.
+ *
+ * Exported because the SSE stream has to resolve against the same origin. Two
+ * independent copies of this constant is how the "/api" prefix came to be
+ * hardcoded in two files.
+ */
+export const API_BASE: string = import.meta.env.VITE_API_URL ?? "/api";
+
+const BASE = API_BASE;
 
 export interface ApiErrorDetails {
   fieldErrors?: Record<string, string[] | undefined>;

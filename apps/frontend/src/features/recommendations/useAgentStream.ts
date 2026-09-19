@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AgentNameValue } from "@pricewise/shared";
+import { API_BASE } from "@/lib/api";
 import { streamEvents } from "@/lib/sse";
 import type { PipelineEvent, ToolCallRecord } from "@/lib/types";
 
@@ -87,7 +88,10 @@ export function useAgentStream() {
 
       try {
         await streamEvents<PipelineEvent>({
-          url: `/api/products/${productId}/generate-recommendation`,
+          // Same origin as every other call. This must never go through a
+          // Vercel rewrite: the edge proxy buffers the stream, which turns five
+          // visible agent steps into one long pause and a single burst.
+          url: `${API_BASE}/products/${productId}/generate-recommendation`,
           signal: controller.signal,
           onEvent(event) {
             switch (event.type) {
