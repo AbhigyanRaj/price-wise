@@ -9,6 +9,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pinned, not "latest". A runtime that silently changes under you is the same
+  # class of problem as an unpinned dependency.
+  BUN_VERSION: 1.3.14
+
 jobs:
   quality:
     name: Typecheck & lint
@@ -18,9 +23,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          # Pinned, not "latest". A runtime that silently changes under you is the
-          # same class of problem as an unpinned dependency.
-          bun-version: 1.3.14
+          bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install dependencies
         # --frozen-lockfile fails if bun.lock is out of date with package.json,
@@ -38,3 +41,85 @@ jobs:
 
       - name: Lint
         run: bun run lint
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pricewise
+          POSTGRES_PASSWORD: pricewise
+          POSTGRES_DB: pricewise_test
+        ports:
+          - 5432:5432
+        # The job waits on this rather than racing the container. A fixed sleep
+        # would be flaky on a slower runner.
+        options: >-
+          --health-cmd "pg_isready -U pricewise -d pricewise_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # The one variable that moves the whole suite off the author's machine.
+      # package.json falls back to a local Homebrew socket when it is unset.
+      TEST_DATABASE_URL: postgresql://pricewise:pricewise@localhost:5432/pricewise_test
+      # lib/env.ts validates at import time and exits on anything missing, so
+      # the suite cannot start without these even though nothing reaches the
+      # network. Agent tests mock Groq entirely; the key is never used.
+      JWT_ACCESS_SECRET: ci-only-access-secret-at-least-32-characters-long
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-at-least-32-characters-long
+      CORS_ORIGIN: http://localhost:5173
+      GROQ_API_KEY: ci-placeholder-never-called
+      GROQ_MODEL_FAST: openai/gpt-oss-20b
+      GROQ_MODEL_STRONG: openai/gpt-oss-120b
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bun run db:generate
+
+      - name: Apply migrations to the test database
+        # Nothing in the test bootstrap creates the schema: resetDb() truncates
+        # the tables it finds, so without this every test fails on a missing
+        # relation.
+        run: bun run --cwd apps/backend test:setup
+
+      - name: Backend tests
+        # Unit, integration and tenant isolation. No test makes a network call.
+        run: bun run --cwd apps/backend test
+
+      - name: Frontend tests
+        run: bun run --cwd apps/frontend test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bun run db:generate
+
+      - name: Build both apps
+        # Proves the production bundle compiles. The frontend build runs `tsc -b`
+        # first, which is a stricter pass than the typecheck job's --noEmit.
+        run: bun run build
