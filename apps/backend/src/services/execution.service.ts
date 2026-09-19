@@ -102,8 +102,20 @@ export async function executeRecommendation(
       afterValue: { attemptedPrice: price, rolledBack: true },
     });
 
-    logger.warn({ recommendationId, price }, "platform execution failed, rolled back");
+    // Log the real cause. The try block covers the platform call, the execution
+    // record and the audit write, so a database failure in either of the last
+    // two used to surface as "Platform rejected the price update", which sends
+    // the next person debugging it at the wrong system entirely.
+    logger.warn(
+      { recommendationId, price, err },
+      "price execution failed, local write rolled back",
+    );
 
-    throw new AppError("EXECUTION_FAILED", "Platform rejected the price update; change rolled back");
+    // The client message stays generic on purpose: it is the honest summary of
+    // what the user needs to know, and the detail belongs in the log rather
+    // than in a response body.
+    throw new AppError("EXECUTION_FAILED", "The price change could not be completed; it has been rolled back", {
+      cause: err instanceof Error ? err.message : String(err),
+    });
   }
 }
