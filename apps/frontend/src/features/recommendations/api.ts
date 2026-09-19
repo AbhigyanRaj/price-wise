@@ -106,3 +106,31 @@ export function useModify() {
     onSettled: () => invalidateAfterDecision(queryClient),
   });
 }
+
+/** Returns a resolved decision to the queue. Bounded server-side to ten
+ *  minutes, so a stale toast fails with a conflict rather than silently
+ *  rewriting old history. */
+export function useUndo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<RecommendationDto>(`/recommendations/${id}/undo`, {}),
+    onSettled: () => invalidateAfterDecision(queryClient),
+  });
+}
+
+export interface BatchApproveResult {
+  id: string;
+  ok: boolean;
+  error?: string;
+}
+
+/** Approves several. Returns a result per id, so partial success is visible
+ *  rather than collapsing into one error. */
+export function useBatchApprove() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      api.post<BatchApproveResult[]>("/recommendations/batch-approve", { ids }),
+    onSettled: () => invalidateAfterDecision(queryClient),
+  });
+}

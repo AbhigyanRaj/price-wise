@@ -56,7 +56,7 @@ When I ask for something that contradicts a document, say so before implementing
 | Validation | Zod, shared between client and server via `packages/shared` | |
 | Server state | TanStack Query | |
 | Forms | React Hook Form + zodResolver | |
-| Charts | Recharts | |
+| Charts | None. Hand-built from divs | Removed Recharts: the confidence waterfall needs floating bars with connectors and a label on every value, which is fighting a charting library rather than using one |
 | Auth | Custom JWT in httpOnly cookies | Not Supabase Auth |
 | Password hashing | `Bun.password` (argon2id) | Fallback `@node-rs/argon2`. **Never** the `argon2` npm package — native gyp build |
 | Tests | Bun test (backend), Vitest + RTL (frontend), Playwright (one E2E spec) | |

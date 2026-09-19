@@ -9,8 +9,7 @@ import { InviteSignupPage } from "@/features/auth/InviteSignupPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CatalogPage } from "@/features/products/CatalogPage";
 import { ProductDetailPage } from "@/features/products/ProductDetailPage";
-import { QueuePage } from "@/features/recommendations/QueuePage";
-import { RecommendationDetailPage } from "@/features/recommendations/RecommendationDetailPage";
+import { DecisionsPage } from "@/features/recommendations/DecisionsPage";
 import { AuditPage } from "@/features/audit/AuditPage";
 import { SettingsPage } from "@/features/org/SettingsPage";
 
@@ -37,8 +36,10 @@ export const routes: RouteObject[] = [
       { index: true, element: <DashboardPage /> },
       { path: "products", element: <CatalogPage /> },
       { path: "products/:productId", element: <ProductDetailPage /> },
-      { path: "decisions", element: <QueuePage /> },
-      { path: "decisions/:recommendationId", element: <RecommendationDetailPage /> },
+      // One screen, two panes. The id is in the URL so a decision stays
+      // linkable, but selecting one does not leave the queue.
+      { path: "decisions", element: <DecisionsPage /> },
+      { path: "decisions/:recommendationId", element: <DecisionsPage /> },
       { path: "activity", element: <AuditPage /> },
       {
         path: "settings",
