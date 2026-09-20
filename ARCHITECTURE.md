@@ -5,7 +5,19 @@ produces pricing recommendations with confidence scores, and a human approves,
 rejects or overrides them before anything reaches a storefront.
 
 Diagrams are Mermaid so they render on GitHub, diff in review, and cannot drift
-out of sync with the repository the way an exported image does.
+out of sync with the repository the way an exported image does. The six
+sections below map one to one onto the six panels of the visual design.
+
+**The whole design on one canvas:**
+[`docs/Pricewise_HLD.excalidraw`](docs/Pricewise_HLD.excalidraw) (open in
+[excalidraw.com](https://excalidraw.com)), exported below so it needs no tool
+to read.
+
+![High-level design](docs/Pricewise_HLD.png)
+
+That file is the overview: six panels, colour-coded by layer, showing how the
+pieces fit. This document is the detail, one section per panel, with the
+reasoning the canvas has no room for.
 
 ---
 
