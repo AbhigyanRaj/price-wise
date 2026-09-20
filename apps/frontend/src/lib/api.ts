@@ -108,6 +108,40 @@ async function attemptRefresh(): Promise<boolean> {
   return refreshInFlight;
 }
 
+/**
+ * Turns "the server sent something that is not our envelope" into a message
+ * that names the actual cause.
+ *
+ * There is one deployment mistake this catches, and it is the easy one to
+ * make: shipping to Vercel without setting VITE_API_URL. API_BASE then falls
+ * back to the relative "/api", the SPA rewrite answers it with index.html, and
+ * every call in the app quietly receives a web page. Without this the analyst
+ * sees "Something went wrong. Please try again." on every screen, which points
+ * nowhere.
+ */
+function envelopeFailure(response: Response, body: string | null): ApiError {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("text/html")) {
+    return new ApiError(
+      "NETWORK_ERROR",
+      `The API returned HTML instead of JSON for ${response.url}. ` +
+        (API_BASE.startsWith("/")
+          ? "VITE_API_URL is not set, so requests are hitting the frontend's own origin and the SPA rewrite is answering them."
+          : "Check that VITE_API_URL points at the API and not at the frontend."),
+      response.status,
+    );
+  }
+
+  return new ApiError(
+    "NETWORK_ERROR",
+    body && body.length < 200
+      ? `Unexpected response from the API: ${body}`
+      : "Something went wrong. Please try again.",
+    response.status,
+  );
+}
+
 interface RequestOptions {
   method?: string;
   body?: unknown;
@@ -146,13 +180,19 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   // 204 carries no body and no envelope, so there is nothing to unwrap.
   if (response.status === 204) return undefined as T;
 
-  const payload = (await response.json().catch(() => null)) as
-    | SuccessEnvelope<T>
-    | FailureEnvelope
-    | null;
+  const raw = await response.text();
+  const payload = (() => {
+    try {
+      return JSON.parse(raw) as SuccessEnvelope<T> | FailureEnvelope;
+    } catch {
+      return null;
+    }
+  })();
 
-  if (!response.ok || !payload || payload.success === false) {
-    const error = payload && payload.success === false ? payload.error : null;
+  if (!payload) throw envelopeFailure(response, raw);
+
+  if (!response.ok || payload.success === false) {
+    const error = payload.success === false ? payload.error : null;
     throw new ApiError(
       error?.code ?? "NETWORK_ERROR",
       error?.message ?? "Something went wrong. Please try again.",
@@ -182,13 +222,19 @@ async function requestPaged<T>(
     if (await attemptRefresh()) return requestPaged<T>(path, signal, true);
   }
 
-  const payload = (await response.json().catch(() => null)) as
-    | SuccessEnvelope<T[]>
-    | FailureEnvelope
-    | null;
+  const raw = await response.text();
+  const payload = (() => {
+    try {
+      return JSON.parse(raw) as SuccessEnvelope<T[]> | FailureEnvelope;
+    } catch {
+      return null;
+    }
+  })();
 
-  if (!response.ok || !payload || payload.success === false) {
-    const error = payload && payload.success === false ? payload.error : null;
+  if (!payload) throw envelopeFailure(response, raw);
+
+  if (!response.ok || payload.success === false) {
+    const error = payload.success === false ? payload.error : null;
     throw new ApiError(
       error?.code ?? "NETWORK_ERROR",
       error?.message ?? "Something went wrong. Please try again.",

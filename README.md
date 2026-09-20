@@ -389,7 +389,7 @@ immediately instead of 500ing on a reviewer's first click.
 
 ```bash
 bun run typecheck && bun run lint
-bun run test            # 228 tests: 132 backend, 96 frontend
+bun run test            # 230 tests: 132 backend, 98 frontend
 bun run test:e2e        # 5 end-to-end tests in 1 spec, needs the stack running
 ```
 
@@ -411,6 +411,80 @@ one failing value in the design handoff.
 
 CI runs typecheck, lint, the full suite against a Postgres service container,
 a production build, and a check that the API document still matches the routes.
+
+---
+
+## Deploying
+
+Vercel serves the frontend, Render runs the API, Supabase holds the database.
+[`render.yaml`](render.yaml) provisions the API;
+[`apps/frontend/vercel.json`](apps/frontend/vercel.json) configures the build.
+
+**The two sides need each other's URL**, so the order matters:
+
+**1 · Supabase.** New project. From Settings → Database copy two connection
+strings:
+
+| Variable | Which one | Why |
+|---|---|---|
+| `DATABASE_URL` | **Transaction pooler**, port 6543 | What the app runs on |
+| `DIRECT_URL` | **Session pooler**, port 5432 | Migrations only; the pooler cannot run DDL |
+
+Not the one labelled "Direct connection". On current free projects it is
+IPv6-only and Render has no outbound IPv6, so it hangs and then fails.
+
+**2 · Render.** New Blueprint from this repository. It reads `render.yaml` and
+asks for the five secrets marked `sync: false`: the two Supabase URLs, two JWT
+secrets (`openssl rand -base64 48`, twice, they must differ), and the Groq key.
+Leave `CORS_ORIGIN` as it is for now. Note the service URL it gives you.
+
+**3 · Vercel.** Import the repository, set the root directory to
+`apps/frontend`. Add one environment variable:
+
+```
+VITE_API_URL = https://your-api.onrender.com     # no trailing slash
+```
+
+**This is not optional.** Without it the app calls its own origin, the SPA
+rewrite answers every API call with `index.html`, and nothing works. The app
+now says so explicitly if it happens rather than showing a generic error, but
+it is easier not to hit it.
+
+**4 · Back to Render.** Set `CORS_ORIGIN` to the exact Vercel URL, no trailing
+slash and no path. Edit it in `render.yaml` and push rather than in the
+dashboard: a Blueprint sync overwrites dashboard edits to literal values.
+
+**5 · Seed the production database.** Migrations run on every deploy but the
+seed deliberately does not, because it truncates first and a redeploy
+mid-review would wipe the reviewer's session. So run it once, by hand, against
+the production database:
+
+```bash
+DATABASE_URL="<the Supabase transaction pooler URL>" bun run --cwd apps/backend db:seed
+```
+
+Skip this and the deploy succeeds, the health check passes, and the app is
+completely empty.
+
+**6 · Check it.**
+
+```bash
+curl https://your-api.onrender.com/healthz          # {"status":"ok"}
+```
+
+Then sign in on the Vercel URL and generate one recommendation, which exercises
+the two things that only break in production: the cross-site auth cookie and
+the SSE stream.
+
+### If something is wrong
+
+| Symptom | Cause |
+|---|---|
+| Login returns 200, every later call 401s | `COOKIE_SECURE` is not `true`, so the cookie is `SameSite=Lax` and never sent cross-site |
+| Browser console shows a CORS error | `CORS_ORIGIN` does not exactly match the Vercel origin. Compared with `===`: a trailing slash fails |
+| Every call errors mentioning HTML | `VITE_API_URL` is unset or points at the frontend |
+| The pipeline shows nothing for ten seconds then everything at once | A proxy is buffering the SSE stream |
+| First request after a quiet period takes ~50s | Render's free tier spun the service down. Expected, not a bug, but warn anyone reviewing it |
 
 ---
 
