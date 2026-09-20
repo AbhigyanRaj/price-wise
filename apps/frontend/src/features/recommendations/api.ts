@@ -49,6 +49,24 @@ function invalidateAfterDecision(queryClient: ReturnType<typeof useQueryClient>)
   ]);
 }
 
+/**
+ * Removes one recommendation from a cached infinite queue, leaving every other
+ * cache shape under the same key prefix untouched.
+ */
+function dropFromQueue(old: unknown, id: string): unknown {
+  if (!old || typeof old !== "object") return old;
+  const pages = (old as { pages?: unknown }).pages;
+  if (!Array.isArray(pages)) return old;
+
+  return {
+    ...old,
+    pages: (pages as Paged<RecommendationDto>[]).map((page) => ({
+      ...page,
+      items: page.items.filter((item) => item.id !== id),
+    })),
+  };
+}
+
 export function useApprove() {
   const queryClient = useQueryClient();
 
@@ -60,18 +78,16 @@ export function useApprove() {
       await queryClient.cancelQueries({ queryKey: ["recommendations"] });
       const previous = queryClient.getQueriesData({ queryKey: ["recommendations"] });
 
-      queryClient.setQueriesData<{ pages: Paged<RecommendationDto>[] }>(
-        { queryKey: ["recommendations"] },
-        (old) =>
-          old
-            ? {
-                ...old,
-                pages: old.pages.map((page) => ({
-                  ...page,
-                  items: page.items.filter((item) => item.id !== id),
-                })),
-              }
-            : old,
+      // The ["recommendations"] prefix is shared by three different shapes: the
+      // infinite queue ({ pages }), the pending-count badge (a single Paged)
+      // and a single detail object. setQueriesData hands this callback all
+      // three, so it has to recognise the one it can transform instead of
+      // assuming. Reaching for old.pages unconditionally threw a TypeError
+      // inside onMutate, which aborts the mutation BEFORE mutationFn runs: the
+      // approve request was never sent and the analyst saw only "Could not
+      // approve that".
+      queryClient.setQueriesData({ queryKey: ["recommendations"] }, (old: unknown) =>
+        dropFromQueue(old, id),
       );
 
       return { previous };
