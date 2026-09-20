@@ -20,27 +20,40 @@ beforeEach(() => {
 });
 
 describe("sign in", () => {
-  test("renders the form and the demo accounts", async () => {
+  test("renders the form", async () => {
     vi.stubGlobal("fetch", mockFetch({ "/auth/me": { status: 401, body: {} } }));
     renderWithProviders(<LoginPage />);
 
     expect(await screen.findByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
-    // The brief wants an evaluator to reach populated data immediately rather
-    // than hunting for credentials in a README.
-    expect(screen.getByText("admin@northwind.test")).toBeInTheDocument();
   });
 
-  test("a demo account fills both fields", async () => {
+  test("the seeded credentials are not printed on the sign-in screen", async () => {
+    vi.stubGlobal("fetch", mockFetch({ "/auth/me": { status: 401, body: {} } }));
+    renderWithProviders(<LoginPage />);
+    await screen.findByLabelText("Email");
+
+    // This is the product's front door. The seeded accounts belong in the
+    // README, and a credential list here reads as a test harness.
+    expect(screen.queryByText(/@northwind\.test/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pricewise2026!/)).not.toBeInTheDocument();
+  });
+
+  test("the password can be revealed and hidden again", async () => {
     vi.stubGlobal("fetch", mockFetch({ "/auth/me": { status: 401, body: {} } }));
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    await user.click(await screen.findByText("analyst@northwind.test"));
+    const password = await screen.findByLabelText("Password");
+    expect(password).toHaveAttribute("type", "password");
 
-    expect(screen.getByLabelText("Email")).toHaveValue("analyst@northwind.test");
-    expect(screen.getByLabelText("Password")).toHaveValue("Pricewise2026!");
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+    expect(password).toHaveAttribute("type", "text");
+
+    // The accessible name states the ACTION, so it flips with the state.
+    await user.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(password).toHaveAttribute("type", "password");
   });
 
   test("an empty submit is blocked client-side and makes no login request", async () => {
@@ -89,7 +102,8 @@ describe("sign in", () => {
     const user = userEvent.setup();
     const { queryClient } = renderWithProviders(<LoginPage />);
 
-    await user.click(await screen.findByText("admin@northwind.test"));
+    await user.type(await screen.findByLabelText("Email"), "admin@northwind.test");
+    await user.type(screen.getByLabelText("Password"), "Pricewise2026!");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {

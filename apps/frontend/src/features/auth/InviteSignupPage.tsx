@@ -1,12 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { InviteSignupSchema, type InviteSignupInput } from "@pricewise/shared";
-import { Button } from "@/components/ui/button";
 import { Field } from "@/components/form/Field";
 import { FullPageSpinner } from "@/components/data/States";
 import { applyServerErrors } from "@/lib/formErrors";
-import { AuthLayout } from "./AuthLayout";
+import { AuthLayout, AUTH_FIELD, AUTH_INPUT, AUTH_LINK, AUTH_SUBMIT } from "./AuthLayout";
 import { useInviteSignup } from "./api";
 import { useAuth } from "./useAuth";
 
@@ -51,13 +51,13 @@ export function InviteSignupPage() {
         <>
           <p>
             Need a workspace of your own?{" "}
-            <Link to="/signup" className="text-acc-t2 underline-offset-2 hover:underline">
+            <Link to="/signup" className={AUTH_LINK}>
               Create one
             </Link>
           </p>
           <p className="mt-1">
             Already have an account?{" "}
-            <Link to="/login" className="text-acc-t2 underline-offset-2 hover:underline">
+            <Link to="/login" className={AUTH_LINK}>
               Sign in
             </Link>
           </p>
@@ -89,6 +89,8 @@ export function InviteSignupPage() {
           autoComplete="off"
           maxLength={12}
           hint="12 characters, from your invitation."
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.inviteCode?.message}
           // Codes are generated from an uppercase alphabet, so normalising
           // here stops a lowercase paste reading as an invalid code.
@@ -101,6 +103,8 @@ export function InviteSignupPage() {
           label="Your name"
           type="text"
           autoComplete="name"
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.name?.message}
           register={form.register("name")}
         />
@@ -110,6 +114,8 @@ export function InviteSignupPage() {
           type="email"
           autoComplete="username"
           hint="Must match the address the invite was issued to."
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.email?.message}
           register={form.register("email")}
         />
@@ -118,26 +124,45 @@ export function InviteSignupPage() {
           label="Password"
           type="password"
           autoComplete="new-password"
+          reveal
           hint={PASSWORD_POLICY}
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.password?.message}
           register={form.register("password")}
         />
 
         {form.formState.errors.root && (
-          <p role="alert" className="text-[12.5px] text-neg">
-            {form.formState.errors.root.message}
-          </p>
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-lg border border-neg/30 bg-neg/5 p-2.5 text-[12px] text-neg"
+          >
+            <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{form.formState.errors.root.message}</span>
+          </div>
         )}
 
         {form.formState.errors.inviteCode?.type === "server" && (
-          <p className="text-[12px] text-t4">
+          <p className="text-[11px] text-t4">
             Codes expire. Ask an admin in that workspace to issue you a new one.
           </p>
         )}
 
-        <Button type="submit" className="w-full" disabled={join.isPending} aria-busy={join.isPending}>
-          {join.isPending ? "Joining" : "Join workspace"}
-        </Button>
+        <button
+          type="submit"
+          className={AUTH_SUBMIT}
+          disabled={join.isPending}
+          aria-busy={join.isPending}
+        >
+          {join.isPending ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              Joining
+            </span>
+          ) : (
+            "Join workspace"
+          )}
+        </button>
       </form>
     </AuthLayout>
   );

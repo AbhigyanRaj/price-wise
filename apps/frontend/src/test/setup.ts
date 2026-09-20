@@ -11,6 +11,18 @@ import "@testing-library/jest-dom/vitest";
  * reading a failure: a component that branches on a media query is exercising
  * its small-viewport branch here.
  */
+/**
+ * jsdom has no canvas implementation, so `getContext` returns null after
+ * routing a "Not implemented" jsdomError to the console. PixelField already
+ * treats a null context as "no canvas here" and returns before it touches
+ * anything else, so the behaviour is correct either way; this only stops
+ * twelve lines of stderr from burying a real failure.
+ *
+ * A prototype assignment rather than vi.stubGlobal, deliberately: the suites
+ * call vi.unstubAllGlobals() in beforeEach, which would undo a stub.
+ */
+HTMLCanvasElement.prototype.getContext = () => null;
+
 if (!window.matchMedia) {
   window.matchMedia = ((query: string) => ({
     matches: false,

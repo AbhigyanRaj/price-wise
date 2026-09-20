@@ -1,12 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, useNavigate } from "react-router";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { SignupSchema, type SignupInput } from "@pricewise/shared";
-import { Button } from "@/components/ui/button";
 import { Field } from "@/components/form/Field";
 import { FullPageSpinner } from "@/components/data/States";
 import { applyServerErrors } from "@/lib/formErrors";
-import { AuthLayout } from "./AuthLayout";
+import { AuthLayout, AUTH_FIELD, AUTH_INPUT, AUTH_LINK, AUTH_SUBMIT } from "./AuthLayout";
 import { useSignup } from "./api";
 import { useAuth } from "./useAuth";
 
@@ -31,19 +31,19 @@ export function SignupPage() {
 
   return (
     <AuthLayout
-      title="Create a workspace"
-      subtitle="You will be its first admin. Invite the rest of your pricing team afterwards."
+      title="Create your account"
+      subtitle="You will be your workspace's first admin. Invite the rest of the pricing team afterwards."
       footer={
         <>
           <p>
             Already have an account?{" "}
-            <Link to="/login" className="text-acc-t2 underline-offset-2 hover:underline">
+            <Link to="/login" className={AUTH_LINK}>
               Sign in
             </Link>
           </p>
           <p className="mt-1">
             Have an invite code?{" "}
-            <Link to="/join" className="text-acc-t2 underline-offset-2 hover:underline">
+            <Link to="/join" className={AUTH_LINK}>
               Join an existing workspace
             </Link>
           </p>
@@ -69,6 +69,8 @@ export function SignupPage() {
           label="Your name"
           type="text"
           autoComplete="name"
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.name?.message}
           register={form.register("name")}
         />
@@ -78,6 +80,8 @@ export function SignupPage() {
           type="text"
           autoComplete="organization"
           hint="Your company or team. Shown in the top bar."
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.organizationName?.message}
           register={form.register("organizationName")}
         />
@@ -86,6 +90,9 @@ export function SignupPage() {
           label="Email"
           type="email"
           autoComplete="username"
+          placeholder="you@company.com"
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.email?.message}
           register={form.register("email")}
         />
@@ -94,20 +101,39 @@ export function SignupPage() {
           label="Password"
           type="password"
           autoComplete="new-password"
+          reveal
           hint={PASSWORD_POLICY}
+          className={AUTH_FIELD}
+          inputClassName={AUTH_INPUT}
           error={form.formState.errors.password?.message}
           register={form.register("password")}
         />
 
         {form.formState.errors.root && (
-          <p role="alert" className="text-[12.5px] text-neg">
-            {form.formState.errors.root.message}
-          </p>
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-lg border border-neg/30 bg-neg/5 p-2.5 text-[12px] text-neg"
+          >
+            <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{form.formState.errors.root.message}</span>
+          </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={signup.isPending} aria-busy={signup.isPending}>
-          {signup.isPending ? "Creating workspace" : "Create workspace"}
-        </Button>
+        <button
+          type="submit"
+          className={AUTH_SUBMIT}
+          disabled={signup.isPending}
+          aria-busy={signup.isPending}
+        >
+          {signup.isPending ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              Creating workspace
+            </span>
+          ) : (
+            "Create workspace"
+          )}
+        </button>
       </form>
     </AuthLayout>
   );
