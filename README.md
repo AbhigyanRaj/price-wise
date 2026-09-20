@@ -289,10 +289,15 @@ recommendation that breaches the margin floor still goes to a human.
 
 ```bash
 bun run typecheck && bun run lint
-bun run test            # 203 tests: 130 backend, 73 frontend
+bun run test            # 227 tests: 131 backend, 96 frontend
+bun run test:e2e        # 5 Playwright specs, needs the stack running
 ```
 
 Backend tests need a database: `TEST_DATABASE_URL=... bun run --cwd apps/backend test:setup` first.
+
+The Playwright suite approves real recommendations, so it consumes the pending
+queue. Run `bun run --cwd apps/backend db:seed` before it if you want a
+repeatable run. It is deliberately not part of `bun run test` for that reason.
 
 **No test makes a network call.** Groq is mocked at the cache boundary, so the
 real tool loop runs with zero traffic. A flaky, expensive suite is a suite
@@ -309,6 +314,85 @@ and a production build.
 
 ---
 
+---
+
+## Screens
+
+All captured from the running application against seeded data.
+
+### Sign in
+
+![Sign in](docs/screenshots/01-sign-in.png)
+
+Custom JWT auth in an httpOnly cookie. No third-party identity provider, no
+hardcoded login. Signup, invite-join and logout all exist behind it.
+
+### Overview
+
+![Overview](docs/screenshots/02-overview.png)
+
+The landing screen answers one question: what needs me. Pending count, recent
+decisions and the activity tail, each with its own loading, empty and error
+state.
+
+### Product catalogue
+
+![Catalogue](docs/screenshots/03-catalogue.png)
+
+Every SKU with current price, the last competitor check, margin, inventory
+status and recommendation state. Filter, sort and search are server side, so
+they work across the whole catalogue rather than the loaded page.
+
+### Decision queue
+
+![Decision queue](docs/screenshots/04-decision-queue.png)
+
+Two panes, because resolving one decision should reveal the next rather than
+returning to a list. Sorted by confidence descending: clear the obvious ones
+quickly, spend attention on the ambiguous. J and K move, A approves, R rejects.
+
+### Decision detail
+
+![Decision detail](docs/screenshots/05-decision-detail.png)
+
+Price and confidence first, because that is the decision. Then what changes if
+you take it, then what each agent contributed with its factor weight, then the
+tool calls underneath. Approve, modify or reject, with the modify path checked
+against the same margin floor the AI was.
+
+### Agent pipeline, mid-run
+
+![Agent pipeline running](docs/screenshots/08-pipeline-running.png)
+
+Streamed over SSE as it happens, three of five agents done. Wave 1 runs Market
+Intelligence and Inventory & Cost concurrently; wave 2 is sequential because
+each step needs the one before it.
+
+### Agent pipeline, complete
+
+![Agent pipeline complete](docs/screenshots/09-pipeline-complete.png)
+
+Per-agent confidence and duration, then the threshold branch: this run landed
+below the configured confidence threshold, so it was routed to a human instead
+of executing. Above the threshold it would have auto-executed and said so.
+
+### Audit trail
+
+![Audit trail](docs/screenshots/06-audit-trail.png)
+
+Append only. Every state change with its actor, before and after values, and
+timestamp. A null actor is the system, which is how an auto-executed price
+change is distinguished from a human approval. Filterable and searchable.
+
+### Settings
+
+![Settings](docs/screenshots/07-settings.png)
+
+Admin only, and enforced by the API independently of this screen. The
+confidence threshold shows its consequence against the last 50 runs rather than
+asking an admin to guess what 0.80 means.
+
+---
 ## Known limitations
 
 Stated rather than hidden.
@@ -329,11 +413,15 @@ Stated rather than hidden.
 - **`--t5` in the design palette is below WCAG AA** at 2.68:1, and the handoff
   uses it for the keyboard-hint strip. Recorded as a bounded exemption in the
   contrast test rather than passed over silently.
-- **The Playwright E2E spec is written but has not been run here.** The browser
-  download stalled repeatedly on this machine. `playwright install chromium`
-  then `bun run test:e2e`.
-- **Mobile is unhandled.** Desktop is the requirement and this is a dense data
-  tool; the catalogue is a seven-column table.
+- **The Playwright suite needs a running stack.** It drives a real browser
+  against a seeded database, so `docker compose up` (or the Bun path plus
+  `db:seed`) has to be up first. It is not part of `bun run test` for that
+  reason.
+- **Mobile is supported but not the target.** Every route was checked for
+  horizontal overflow at 375, 640, 768, 1024 and 1280, and the shell reflows to
+  a bottom tab bar below 768. It is a dense data tool built for a desktop
+  analyst; the catalogue drops columns on a phone rather than pretending a
+  nine-column table fits.
 - **Cut deliberately:** Postgres RLS as a defence-in-depth backstop, bulk
   approve, and URL-synced filter state.
 
