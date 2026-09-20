@@ -17,6 +17,10 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pricewise-pgdata:/var/lib/postgresql/data
+      # Creates pricewise_test alongside pricewise. The image only takes one
+      # POSTGRES_DB, and the test suite needs the second one to exist before
+      # `test:setup` can migrate into it.
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
     healthcheck:
       # The seed script and the CI job both wait on this rather than racing the
       # container, a sleep would be flaky on a slower machine.

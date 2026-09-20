@@ -36,8 +36,28 @@ one.
 
 ## Running it
 
-**Requirements:** [Bun](https://bun.sh) 1.3+, PostgreSQL 16+, and a free
-[Groq API key](https://console.groq.com/keys).
+**Requirements:** [Docker](https://docs.docker.com/get-docker/) and
+[Bun](https://bun.sh) 1.3+, plus a free
+[Groq API key](https://console.groq.com/keys). Docker supplies PostgreSQL; if
+you would rather use your own, see the second path below.
+
+### Everything in one command
+
+```bash
+git clone https://github.com/AbhigyanRaj/price-wise.git
+cd price-wise
+cp apps/backend/.env.example apps/backend/.env
+# Add your GROQ_API_KEY to that file. The other defaults work as they are.
+
+docker compose up --build
+```
+
+That brings up Postgres, the API and the web app, runs the migrations and seeds
+the database. Open **http://localhost:5173**.
+
+### Or run it directly with Bun
+
+Faster to iterate on, and what the dev scripts are built for.
 
 ```bash
 git clone https://github.com/AbhigyanRaj/price-wise.git
@@ -45,18 +65,12 @@ cd price-wise
 bun install
 
 cp apps/backend/.env.example apps/backend/.env
-# Edit apps/backend/.env: add GROQ_API_KEY, and two JWT secrets:
+# Add your GROQ_API_KEY. To generate the two JWT secrets:
 #   openssl rand -base64 48        (run it twice, they must differ)
-```
 
-**Database, either way:**
-
-```bash
-bun run db:up          # Docker Compose: Postgres on 5432, Adminer on 8080
-# or point DATABASE_URL at any local Postgres you already have
-```
-
-```bash
+bun run db:up          # Postgres on 5432, Adminer on 8080
+bun run db:generate    # Prisma 7 emits the client into the source tree, and it
+                       # is gitignored, so a fresh clone must generate it first
 bun run db:migrate
 bun run db:seed
 bun run dev            # API on :4000, app on :5173
@@ -64,7 +78,12 @@ bun run dev            # API on :4000, app on :5173
 
 Open **http://localhost:5173**.
 
-If 5432 or 8080 is taken: `POSTGRES_PORT=5433 ADMINER_PORT=8081 bun run db:up`.
+**Using your own Postgres instead of Docker?** Point `DATABASE_URL` in
+`apps/backend/.env` at it, skip `db:up`, and create a second database called
+`pricewise_test` if you intend to run the backend tests.
+
+**Port already in use?** `POSTGRES_PORT=5433 ADMINER_PORT=8081 bun run db:up`,
+and change the port in `DATABASE_URL` to match.
 
 ### Sign in
 
@@ -270,7 +289,7 @@ recommendation that breaches the margin floor still goes to a human.
 
 ```bash
 bun run typecheck && bun run lint
-bun run test            # 186 tests: 113 backend, 73 frontend
+bun run test            # 203 tests: 130 backend, 73 frontend
 ```
 
 Backend tests need a database: `TEST_DATABASE_URL=... bun run --cwd apps/backend test:setup` first.

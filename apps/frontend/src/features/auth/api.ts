@@ -18,12 +18,17 @@ function useAuthEntry<TInput>(path: string) {
   return useMutation({
     mutationFn: (values: TInput) => api.post<SessionDto>(path, values),
     onSuccess(session) {
-      // Cleared before seeding, not after. Without this the next user to sign
-      // in briefly sees the previous tenant's cached data, which in a
-      // multi-tenant product is the worst bug available. useSignOut already
-      // clears for exactly this reason; the sign-in path had the same hole
-      // whenever a session expired without an explicit sign-out.
-      queryClient.clear();
+      // Drop every cached query from the previous session so a new tenant never
+      // sees the old tenant's rows, which in a multi-tenant product is the
+      // worst bug available.
+      //
+      // removeQueries with a predicate, NOT clear(). clear() wipes the whole
+      // cache including the identity query that AuthProvider is actively
+      // observing, so the observer goes back to pending and RequireAuth shows a
+      // full-page spinner in the same tick that we are trying to write the
+      // session into it. Excluding the auth key means the write below lands on
+      // a query that was never torn down.
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "auth" });
       queryClient.setQueryData(SESSION_QUERY_KEY, session);
     },
   });

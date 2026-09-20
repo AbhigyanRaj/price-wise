@@ -35,9 +35,16 @@ export function AuthLayout({
         />
         <div className="relative flex h-full flex-col justify-center px-12 py-16">
           <p className="eyebrow mb-3">Dynamic pricing intelligence</p>
-          <h1 className="mb-3 max-w-sm text-[38px] leading-[1.08] tracking-[-0.028em] text-t0">
+          {/* Styled as a headline but not marked as one. This panel is
+              hidden below lg, and an h1 that vanishes with the layout leaves
+              the page with no top-level heading at all. The form title below
+              is what the page is actually for, so that carries the h1. */}
+          <p
+            aria-hidden="true"
+            className="mb-3 max-w-sm text-[38px] font-semibold leading-[1.08] tracking-[-0.028em] text-t0"
+          >
             Five agents. One price. Your decision.
-          </h1>
+          </p>
           <p className="mb-10 max-w-sm text-[12.5px] leading-[1.6] text-t3">
             Specialists analyse the market, your costs and demand. You approve, override or reject.
             Nothing reaches the storefront without a decision.
@@ -50,10 +57,12 @@ export function AuthLayout({
         <div className="relative w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2">
             <Mark size={18} />
-            <span className="text-[1.3rem] font-semibold tracking-[-0.02em] text-t0">Pricewise</span>
+            <span className="text-[1.3rem] font-semibold tracking-[-0.02em] text-t0">
+              Pricewise
+            </span>
           </div>
 
-          <h2 className="mb-1 text-[23px] tracking-[-0.022em]">{title}</h2>
+          <h1 className="mb-1 text-[23px] tracking-[-0.022em]">{title}</h1>
           <p className="mb-6 text-[12.5px] leading-[1.6] text-t3">{subtitle}</p>
 
           {children}

@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ApiError } from "@/lib/api";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { RecommendationDto } from "@/lib/types";
@@ -171,5 +174,72 @@ export function DeltaControl({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Owns the two sliders and their save.
+ *
+ * A separate component on purpose, mounted by SettingsPage only once the
+ * organization is known and keyed on its id. Holding this state in the page
+ * meant the useState initialisers ran on the first render, before the session
+ * resolved, so the sliders sat on the defaults for ever: an organization whose
+ * saved threshold was 0.75 was shown 0.80, and saving would silently write the
+ * wrong value back. Keying on the id also stops one tenant's unsaved slider
+ * position appearing on another tenant's screen.
+ */
+export function RiskControls({
+  org,
+  recent,
+  sample,
+  onSaved,
+}: {
+  org: { confidenceThreshold: number; maxPriceDeltaPct: number };
+  recent: RecommendationDto[];
+  sample: { name: string; currentPrice: number } | null;
+  onSaved: (patch: { confidenceThreshold: number; maxPriceDeltaPct: number }) => Promise<void>;
+}) {
+  const [threshold, setThreshold] = useState(org.confidenceThreshold);
+  const [maxDelta, setMaxDelta] = useState(org.maxPriceDeltaPct);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [message, setMessage] = useState<string | null>(null);
+
+  const dirty = threshold !== org.confidenceThreshold || maxDelta !== org.maxPriceDeltaPct;
+
+  async function save() {
+    setStatus("saving");
+    setMessage(null);
+    try {
+      await onSaved({ confidenceThreshold: threshold, maxPriceDeltaPct: maxDelta });
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch (err) {
+      setStatus("error");
+      setMessage(err instanceof ApiError ? err.message : "Could not save. Please try again.");
+    }
+  }
+
+  return (
+    <>
+      <ThresholdControl value={threshold} onChange={setThreshold} recent={recent} />
+      <DeltaControl value={maxDelta} onChange={setMaxDelta} sample={sample} />
+
+      <div className="flex items-center gap-3">
+        <Button size="sm" onClick={() => void save()} disabled={status === "saving" || !dirty}>
+          {status === "saving" ? "Saving" : "Save changes"}
+        </Button>
+        {/* One alert, not two. The message belongs beside the control that
+            failed rather than in a banner at the top of a long page. */}
+        {status === "saved" && <span className="text-[12px] text-pos">Saved</span>}
+        {status === "error" && message && (
+          <span role="alert" className="text-[12px] text-neg">
+            {message}
+          </span>
+        )}
+        {status === "idle" && !dirty && (
+          <span className="text-[12px] text-t5">No unsaved changes</span>
+        )}
+      </div>
+    </>
   );
 }

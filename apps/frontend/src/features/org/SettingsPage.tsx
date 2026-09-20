@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FullPageSpinner } from "@/components/data/States";
 import { useAuth, SESSION_QUERY_KEY } from "@/features/auth/useAuth";
-import { ThresholdControl, DeltaControl } from "./ThresholdControl";
+import { RiskControls } from "./ThresholdControl";
 import { CategoryRulesSection } from "./CategoryRulesSection";
 import type {
   InviteDto,
@@ -20,12 +20,8 @@ import { queryString } from "@/lib/api";
 export function SettingsPage() {
   const queryClient = useQueryClient();
   const { session } = useAuth();
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const org = session?.organization;
-  const [threshold, setThreshold] = useState(org?.confidenceThreshold ?? 0.8);
-  const [maxDelta, setMaxDelta] = useState(org?.maxPriceDeltaPct ?? 0.2);
 
   // Recent scores power the live preview. Fetched once and filtered in the
   // browser, so dragging the slider costs no requests at all.
@@ -54,25 +50,14 @@ export function SettingsPage() {
     queryFn: ({ signal }) => api.get<InviteDto[]>("/org/invites", signal),
   });
 
-  const save = useMutation({
-    mutationFn: () =>
-      api.patch<OrganizationDto>("/org/settings", {
-        confidenceThreshold: threshold,
-        maxPriceDeltaPct: maxDelta,
-      }),
-    onSuccess(updated) {
-      queryClient.setQueryData(SESSION_QUERY_KEY, (old: unknown) =>
-        old && typeof old === "object"
-          ? { ...(old as object), organization: updated }
-          : old,
-      );
-      setSaved(true);
-      setError(null);
-      setTimeout(() => setSaved(false), 2000);
-    },
-    onError: (err) =>
-      setError(err instanceof ApiError ? err.message : "Could not save. Please try again."),
-  });
+  /** Writes the patch and folds the response back into the cached session, so
+   *  the top bar and every threshold reference update without a refetch. */
+  async function saveSettings(patch: { confidenceThreshold: number; maxPriceDeltaPct: number }) {
+    const updated = await api.patch<OrganizationDto>("/org/settings", patch);
+    queryClient.setQueryData(SESSION_QUERY_KEY, (old: unknown) =>
+      old && typeof old === "object" ? { ...(old as object), organization: updated } : old,
+    );
+  }
 
   if (!org) return <FullPageSpinner />;
 
@@ -86,58 +71,36 @@ export function SettingsPage() {
         </p>
       </header>
 
-      {error && (
-        <div role="alert" className="mb-4 rounded-md border border-neg-border/40 bg-neg-a px-3 py-2">
-          <p className="text-[13px] text-neg">{error}</p>
-        </div>
-      )}
-
       <div className="space-y-4">
-        <ThresholdControl
-          value={threshold}
-          onChange={setThreshold}
+        <RiskControls
+          key={org.id}
+          org={org}
           recent={recent?.items ?? []}
-        />
-
-        <DeltaControl
-          value={maxDelta}
-          onChange={setMaxDelta}
           sample={sample?.items[0] ?? null}
+          onSaved={saveSettings}
         />
-
-        <div className="flex items-center gap-3">
-          <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? "Saving" : "Save changes"}
-          </Button>
-          {saved && <span className="text-[12px] text-pos">Saved</span>}
-          {error && (
-            <span role="alert" className="text-[12px] text-neg">
-              {error}
-            </span>
-          )}
-        </div>
 
         <CategoryRulesSection />
+
+        <InviteSection invites={invites ?? []} onChange={() => void refetchInvites()} />
+
+        <section className="rounded-card border border-line bg-panel">
+          <h3 className="border-b border-line px-5 py-3">Members</h3>
+          <ul className="divide-y divide-line2">
+            {(members ?? []).map((member) => (
+              <li key={member.id} className="flex items-center justify-between px-5 py-2.5">
+                <div>
+                  <p className="text-[12.5px] text-t1">{member.name}</p>
+                  <p className="font-mono text-[10.5px] text-t4">{member.email}</p>
+                </div>
+                <span className="text-[11.5px] text-t3">
+                  {member.role === "ADMIN" ? "Admin" : "Pricing Analyst"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
-
-      <InviteSection invites={invites ?? []} onChange={() => void refetchInvites()} />
-
-      <section className="rounded-md border border-line bg-panel">
-        <h3 className="border-b border-line px-4 py-2.5 text-sm">Members</h3>
-        <ul className="divide-y divide-line2">
-          {(members ?? []).map((member) => (
-            <li key={member.id} className="flex items-center justify-between px-4 py-2.5">
-              <div>
-                <p className="text-[13px]">{member.name}</p>
-                <p className="font-mono text-[11px] text-t4">{member.email}</p>
-              </div>
-              <span className="text-[12px] text-t3">
-                {member.role === "ADMIN" ? "Admin" : "Pricing Analyst"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }
@@ -166,7 +129,7 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
   });
 
   return (
-    <section className="mb-5 rounded-md border border-line bg-panel p-4">
+    <section className="rounded-card border border-line bg-panel p-5">
       <h3 className="mb-1">Invite a colleague</h3>
       <p className="mb-3 text-[13px] text-t3">
         The code is bound to their email address, so an intercepted code is useless without also
@@ -186,7 +149,7 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
           value={role}
           onChange={(e) => setRole(e.target.value)}
           aria-label="Invite role"
-          className="h-8 rounded-md border border-line bg-bg px-2 text-[13px]"
+          className="h-8 rounded-md border border-line bg-input px-2 text-[12.5px]"
         >
           <option value="PRICING_ANALYST">Pricing Analyst</option>
           <option value="ADMIN">Admin</option>
@@ -200,7 +163,7 @@ function InviteSection({ invites, onChange }: { invites: InviteDto[]; onChange: 
       {error && <p className="mt-2 text-[13px] text-neg">{error}</p>}
 
       {created && (
-        <div className="mt-3 flex items-center justify-between rounded-md border border-line bg-bg px-3 py-2">
+        <div className="mt-3 flex items-center justify-between rounded-inset border border-line bg-inset px-3 py-2.5">
           <div>
             <p className="text-[12px] text-t3">Code for {created.email}</p>
             <p className="font-mono text-sm tracking-widest text-t1">{created.code}</p>
