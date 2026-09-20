@@ -16,6 +16,9 @@ interface AuthValue {
   /** UX only. The API enforces the same rule independently, and hiding a
    *  control is not access control. */
   isAdmin: boolean;
+  /** Set when the identity check failed for a reason that is NOT "signed out".
+   *  Callers must not treat this as a sign-out. */
+  error: ApiError | null;
   refetch: () => void;
 }
 
@@ -24,12 +27,17 @@ const AuthContext = createContext<AuthValue | null>(null);
 export const SESSION_QUERY_KEY = ["auth", "session"] as const;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery<SessionDto | null, ApiError>({
     queryKey: SESSION_QUERY_KEY,
     queryFn: () => api.get<SessionDto>("/auth/me"),
-    // A 401 here is the answer to "am I logged in", not a failure worth
-    // retrying. Retrying would also delay the redirect to the login page.
-    retry: false,
+    // A 401 is the answer to "am I logged in", not a failure: retrying it would
+    // only delay the redirect to the login page. Anything else IS a failure,
+    // and the identity query is the one query in the app where failing closed
+    // means throwing the user out of a session they still hold. A 429 or a
+    // dropped connection gets three backed-off attempts before we conclude
+    // anything.
+    retry: (count, err) => !(err instanceof ApiError && err.status === 401) && count < 3,
+    retryDelay: (count) => Math.min(1000 * 2 ** count, 8000),
     staleTime: 5 * 60_000,
   });
 
@@ -39,9 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       isAuthenticated: Boolean(data?.user),
       isAdmin: data?.user.role === "ADMIN",
+      // A 401 means signed out, which is an answer rather than an error.
+      error: error instanceof ApiError && error.status !== 401 ? error : null,
       refetch: () => void refetch(),
     }),
-    [data, isLoading, refetch],
+    [data, isLoading, error, refetch],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -53,8 +63,8 @@ export function useAuth(): AuthValue {
   return context;
 }
 
-/** Clears every cached query on sign out. Without this the next user to sign
- *  in on the same browser briefly sees the previous tenant's data from cache,
+/** Drops every cached query on sign out. Without this the next user to sign in
+ *  on the same browser briefly sees the previous tenant's data from cache,
  *  which in a multi-tenant product is the worst bug available. */
 export function useSignOut() {
   const queryClient = useQueryClient();
@@ -66,7 +76,17 @@ export function useSignOut() {
       // An already-expired session still ends here. Nothing to report.
       if (!(error instanceof ApiError)) throw error;
     } finally {
-      queryClient.clear();
+      // Mirrors the sign-in path deliberately: remove the tenant-scoped
+      // queries, then WRITE the identity rather than deleting it.
+      //
+      // clear() on its own removes the query this provider observes without
+      // giving the observer a new value, so for one render the context still
+      // reports the previous session. The caller navigates to /login in that
+      // same tick, the login page sees isAuthenticated still true and sends
+      // the user straight back to the dashboard, where every query then 401s.
+      // The visible bug was "sign out does nothing except break the page".
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "auth" });
+      queryClient.setQueryData(SESSION_QUERY_KEY, null);
     }
   };
 }

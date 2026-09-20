@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router";
 import { useAuth } from "@/features/auth/useAuth";
-import { FullPageSpinner } from "@/components/data/States";
+import { ErrorState, FullPageSpinner } from "@/components/data/States";
 
 /**
  * Gates a route on being signed in, and optionally on being an admin.
@@ -16,12 +16,27 @@ export function RequireAuth({
   adminOnly?: boolean | undefined;
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading, isAdmin } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, error, refetch } = useAuth();
   const location = useLocation();
 
   // Waiting on /auth/me. Redirecting now would bounce a signed-in user to the
   // login page on every hard refresh.
   if (isLoading) return <FullPageSpinner />;
+
+  // The identity check failed for a reason other than "not signed in", so we
+  // do not know whether this session is valid. Bouncing to the login page here
+  // would throw out a user who is still signed in, which is what a rate-limited
+  // or briefly unreachable API used to do.
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not confirm your session"
+        description={`${error.message} You are probably still signed in. Try again in a moment.`}
+        onRetry={refetch}
+        className="min-h-[60vh]"
+      />
+    );
+  }
 
   if (!isAuthenticated) {
     // Remember where they were headed so login can return them there.

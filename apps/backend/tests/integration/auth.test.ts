@@ -255,6 +255,31 @@ describe("cross-cutting middleware", () => {
     expect(other.status).toBe(401);
   });
 
+  test("failed logins do not rate-limit the session check", async () => {
+    // A distinct email, because the limiter keys on address AND email: signing
+    // up as ADA here would share a key with the failures below.
+    const victim = "sam@northwind.test";
+    const { jar } = await signupWithJar({ email: victim });
+
+    // Exhaust the brute-force window for a DIFFERENT account on this address.
+    for (let i = 0; i < 12; i++) {
+      await post("/auth/login", { email: ADA.email, password: "WrongPassword9" });
+    }
+    expect(
+      (await post("/auth/login", { email: ADA.email, password: "WrongPassword9" })).status,
+    ).toBe(429);
+
+    // GET /auth/me is what every page load calls to answer "am I signed in".
+    // It used to sit behind the same limiter, keyed on an empty email because
+    // it has no body, so a locked-out window logged out everyone on the
+    // address. The client reads a non-200 here as signed out, so the symptom
+    // was being thrown to the login page on refresh.
+    for (let i = 0; i < 5; i++) {
+      const me = await fetch(`${server.url}/auth/me`, { headers: { Cookie: jar.header() } });
+      expect(me.status).toBe(200);
+    }
+  });
+
   test("returns the error envelope for an unknown route", async () => {
     const res = await fetch(`${server.url}/does-not-exist`);
     const body = await readJson(res);

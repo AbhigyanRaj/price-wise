@@ -8,7 +8,7 @@ import { env } from "./lib/env";
 import { logger } from "./lib/logger";
 import { requestId } from "./middleware/requestId";
 import { csrfGuard } from "./middleware/csrf";
-import { generalRateLimit, authRateLimit } from "./middleware/rateLimit";
+import { generalRateLimit } from "./middleware/rateLimit";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { requireAuth } from "./middleware/auth";
 import { tenantScope } from "./middleware/tenant";
@@ -56,7 +56,10 @@ export function createApp() {
   app.use(generalRateLimit); // 8. broad limit
 
   app.use(healthRoutes);
-  app.use("/auth", authRateLimit, authRoutes);
+  // The brute-force limiter is attached per route inside authRoutes, not here.
+  // Mounting it on the router put GET /auth/me behind it, and /auth/me is the
+  // session check every page load makes.
+  app.use("/auth", authRoutes);
   app.use("/org", requireAuth, tenantScope, orgRoutes);
   app.use("/products", requireAuth, tenantScope, productRoutes);
   app.use("/recommendations", requireAuth, tenantScope, recommendationRoutes);
