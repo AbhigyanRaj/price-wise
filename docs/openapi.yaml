@@ -31,8 +31,10 @@ info:
     All LLM calls happen server-side. The browser never talks to Groq.
   version: 1.0.0
 servers:
-  - url: https://pricewise-api.onrender.com
-    description: Production (Render)
+  - url: https://price-wise-x14b.onrender.com
+    description: >
+      Production. Render's free tier spins down after about fifteen minutes
+      idle, so the first request can take roughly 35 seconds.
   - url: http://localhost:4000
     description: Local development
 

@@ -94,7 +94,7 @@ services:
       # in the repository rather than the dashboard: a Blueprint sync reverts
       # dashboard edits to literal `value:` entries.
       - key: CORS_ORIGIN
-        value: https://REPLACE-WITH-VERCEL-DOMAIN.vercel.app
+        value: https://pricewise-klupup.vercel.app
 
       # ---- AI -----------------------------------------------------------
       - key: GROQ_API_KEY
