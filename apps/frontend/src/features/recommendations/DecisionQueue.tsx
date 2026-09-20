@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { relativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { ExportButton } from "./ExportButton";
 import type { RecommendationDto } from "@/lib/types";
 
 export const QUEUE_FILTERS = [
@@ -50,11 +51,15 @@ export function DecisionQueue({
   return (
     <div className="flex w-[376px] shrink-0 flex-col border-r border-line bg-chrome">
       <div className="border-b border-line px-4 py-3">
-        <div className="mb-2.5 flex items-baseline justify-between">
+        <div className="mb-2.5 flex items-baseline justify-between gap-2">
           <h1 className="text-[15px] font-semibold tracking-[-0.01em] text-t0">Decisions</h1>
-          <span className="tnum font-mono text-[11px] text-t4">
+          <span className="tnum shrink-0 font-mono text-[11px] text-t4">
             {items.length} {filter === "PENDING" ? "pending" : "shown"}
           </span>
+        </div>
+
+        <div className="mb-2.5">
+          <ExportButton status={filter} />
         </div>
 
         <div
