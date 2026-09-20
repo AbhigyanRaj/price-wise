@@ -6,6 +6,8 @@ import type { Role } from "@pricewise/shared";
 // actually binds in some categories and not others, and the demo can show a
 // range of agent behaviour rather than "drop the price" five times.
 export interface CategoryProfile {
+  /** Fallback only, for a category with no entry in PRODUCTS below. Real
+   *  products price from their own band. */
   priceRange: [number, number];
   marginRange: [number, number];
   volatility: number;
@@ -13,15 +15,22 @@ export interface CategoryProfile {
   elasticity: number;
 }
 
+// Price ranges are rupees, at bands an Indian marketplace actually sells in,
+// not a dollar figure multiplied by 85. Margins and elasticity are unchanged:
+// thin and volatile in electronics, fat and stable in beauty, which is what
+// makes the margin floor bind in some categories and not others.
 export const CATEGORY_PROFILES: Record<string, CategoryProfile> = {
-  Electronics: { priceRange: [49, 1899], marginRange: [0.12, 0.28], volatility: 0.08, elasticity: -2.4 },
-  "Home & Kitchen": { priceRange: [15, 399], marginRange: [0.25, 0.48], volatility: 0.04, elasticity: -1.6 },
-  Apparel: { priceRange: [12, 189], marginRange: [0.35, 0.62], volatility: 0.06, elasticity: -1.4 },
-  Outdoor: { priceRange: [25, 899], marginRange: [0.22, 0.45], volatility: 0.05, elasticity: -1.8 },
-  Beauty: { priceRange: [8, 129], marginRange: [0.4, 0.7], volatility: 0.03, elasticity: -0.9 },
+  Electronics: { priceRange: [999, 89999], marginRange: [0.12, 0.28], volatility: 0.08, elasticity: -2.4 },
+  "Home & Kitchen": { priceRange: [499, 24999], marginRange: [0.25, 0.48], volatility: 0.04, elasticity: -1.6 },
+  Apparel: { priceRange: [399, 12999], marginRange: [0.35, 0.62], volatility: 0.06, elasticity: -1.4 },
+  Outdoor: { priceRange: [899, 44999], marginRange: [0.22, 0.45], volatility: 0.05, elasticity: -1.8 },
+  Beauty: { priceRange: [249, 7999], marginRange: [0.4, 0.7], volatility: 0.03, elasticity: -0.9 },
 };
 
-export const COMPETITORS = ["SoundHub", "AudioMart", "BassLine", "ValueRange", "PrimeGoods"];
+// Invented marketplaces, deliberately. This is synthetic data in a public
+// repository, and naming real Indian marketplaces would imply these are prices
+// actually observed on them.
+export const COMPETITORS = ["ShopKart", "DesiBazaar", "PriceWala", "MegaMart", "SwiftCart"];
 
 /** Documented in the README so an evaluator can log in immediately. */
 export const SEED_PASSWORD = "Pricewise2026!";
@@ -47,54 +56,118 @@ export interface SeedOrg {
 // different auto-execution behaviour between tenants.
 export const ORGS: SeedOrg[] = [
   {
-    name: "Northwind Retail",
-    slug: "NW",
+    name: "Suvidha Retail",
+    slug: "SR",
     confidenceThreshold: 0.8,
     maxPriceDeltaPct: 0.2,
     users: [
-      { email: "admin@northwind.test", name: "Ada Admin", role: "ADMIN" },
-      { email: "analyst@northwind.test", name: "Alan Analyst", role: "PRICING_ANALYST" },
+      { email: "admin@suvidha.test", name: "Ananya Rao", role: "ADMIN" },
+      { email: "analyst@suvidha.test", name: "Rohan Mehta", role: "PRICING_ANALYST" },
     ],
     categories: ["Electronics", "Home & Kitchen", "Apparel"],
     skuCount: 28,
   },
   {
-    name: "Meridian Goods",
-    slug: "MG",
+    name: "Bazaar Kart",
+    slug: "BK",
     // Deliberately lower: the same recommendation auto-executes here and goes
-    // to a human at Northwind. That contrast is the tenancy demo.
+    // to a human at Suvidha. That contrast is the tenancy demo.
     confidenceThreshold: 0.75,
     maxPriceDeltaPct: 0.25,
     users: [
-      { email: "admin@meridian.test", name: "Maya Admin", role: "ADMIN" },
-      { email: "analyst@meridian.test", name: "Marco Analyst", role: "PRICING_ANALYST" },
+      { email: "admin@bazaarkart.test", name: "Priya Nair", role: "ADMIN" },
+      { email: "analyst@bazaarkart.test", name: "Vikram Shah", role: "PRICING_ANALYST" },
     ],
     categories: ["Electronics", "Outdoor", "Beauty"],
     skuCount: 26,
   },
 ];
 
-const PRODUCT_NAMES: Record<string, string[]> = {
+/**
+ * Each product carries its own price band, in rupees.
+ *
+ * A single category-wide range is what a generator reaches for first, and it
+ * produces a catalogue nobody believes: drawing every Home & Kitchen item from
+ * one 499 to 24,999 band priced a masala dabba at 15,389 and a wet grinder at
+ * 702. The agents reason over competitor gaps and margins rather than absolute
+ * prices, so the arithmetic was never wrong, but a reviewer who knows what
+ * these things cost stops trusting the rest of the screen.
+ */
+interface CatalogProduct {
+  name: string;
+  price: [number, number];
+}
+
+const PRODUCTS: Record<string, CatalogProduct[]> = {
   Electronics: [
-    "Noise-Cancelling Headphones", "Wireless Earbuds", "4K Monitor", "Mechanical Keyboard",
-    "Portable SSD", "Bluetooth Speaker", "Webcam Pro", "USB-C Hub", "Smart Watch",
-    "Action Camera", "Tablet Stand", "Gaming Mouse",
+    { name: "Wireless Earbuds", price: [1499, 4999] },
+    { name: "Power Bank 20000mAh", price: [1299, 2999] },
+    { name: "Smart LED TV 43 inch", price: [22999, 38999] },
+    { name: "Bluetooth Party Speaker", price: [3499, 9999] },
+    { name: "Mechanical Keyboard", price: [2999, 7999] },
+    { name: "Fast Charger 65W", price: [999, 2499] },
+    { name: "Smart Watch", price: [1999, 6999] },
+    { name: "Action Camera", price: [6999, 18999] },
+    { name: "Gaming Mouse", price: [899, 3499] },
+    { name: "Soundbar 2.1", price: [4999, 14999] },
+    { name: "Room Air Purifier", price: [8999, 24999] },
+    { name: "Tablet 10 inch", price: [11999, 24999] },
   ],
   "Home & Kitchen": [
-    "Electric Kettle", "Cast Iron Skillet", "Espresso Machine", "Air Fryer", "Knife Block Set",
-    "Stand Mixer", "Vacuum Flask", "Ceramic Dinner Set", "Blender", "Toaster",
+    { name: "Mixer Grinder 750W", price: [2499, 5999] },
+    { name: "Stainless Pressure Cooker", price: [1299, 3499] },
+    { name: "Induction Cooktop", price: [1999, 4499] },
+    { name: "Roti Maker", price: [1499, 3299] },
+    { name: "Idli Steamer", price: [699, 1899] },
+    { name: "Copper Water Bottle", price: [499, 1299] },
+    { name: "Masala Dabba", price: [399, 999] },
+    { name: "Non-stick Tawa", price: [499, 1499] },
+    { name: "Electric Kettle", price: [799, 2299] },
+    { name: "Casserole Set", price: [899, 2499] },
+    { name: "Wet Grinder", price: [4999, 11999] },
+    { name: "Steel Dinner Set", price: [1999, 5999] },
   ],
   Apparel: [
-    "Merino Wool Scarf", "Rain Shell Jacket", "Oxford Shirt", "Chino Trousers", "Leather Belt",
-    "Cashmere Jumper", "Running Shorts", "Canvas Tote",
+    { name: "Cotton Kurta", price: [699, 1999] },
+    { name: "Banarasi Silk Saree", price: [3999, 12999] },
+    { name: "Nehru Jacket", price: [1499, 3999] },
+    { name: "Chikankari Dupatta", price: [899, 2499] },
+    { name: "Kolhapuri Sandals", price: [799, 2199] },
+    { name: "Linen Shirt", price: [1299, 2999] },
+    { name: "Anarkali Suit Set", price: [1999, 5999] },
+    { name: "Pashmina Shawl", price: [2499, 8999] },
+    { name: "Cotton Palazzo", price: [499, 1299] },
+    { name: "Block Print Kurti", price: [599, 1699] },
+    { name: "Sherwani", price: [4999, 14999] },
+    { name: "Leather Juttis", price: [899, 2499] },
   ],
   Outdoor: [
-    "Alpine Tent", "Trekking Poles", "Down Sleeping Bag", "Camping Stove", "Head Torch",
-    "Dry Bag", "Insulated Flask", "Trail Backpack", "Folding Chair",
+    { name: "Trekking Backpack 60L", price: [2499, 6999] },
+    { name: "Dome Camping Tent", price: [2999, 9999] },
+    { name: "Sleeping Bag", price: [1499, 4999] },
+    { name: "Trekking Poles", price: [899, 2999] },
+    { name: "Insulated Flask", price: [699, 1999] },
+    { name: "Rechargeable Headlamp", price: [599, 1999] },
+    { name: "Camping Stove", price: [1299, 3999] },
+    { name: "Foldable Trek Chair", price: [899, 2499] },
+    { name: "Rain Poncho", price: [399, 1199] },
+    { name: "Dry Bag", price: [499, 1499] },
+    { name: "Trekking Shoes", price: [2499, 7999] },
+    { name: "Portable Water Filter", price: [1499, 4499] },
   ],
   Beauty: [
-    "Vitamin C Serum", "Hydrating Cleanser", "Retinol Night Cream", "Lip Balm Trio",
-    "Mineral Sunscreen", "Clay Mask", "Hair Oil", "Exfoliating Toner",
+    { name: "Kumkumadi Face Oil", price: [599, 1999] },
+    { name: "Ubtan Face Pack", price: [249, 699] },
+    { name: "Bhringraj Hair Oil", price: [299, 899] },
+    { name: "Neem Face Wash", price: [149, 449] },
+    { name: "Rose Water Toner", price: [199, 599] },
+    { name: "Kajal Stick", price: [149, 399] },
+    { name: "Turmeric Day Cream", price: [299, 899] },
+    { name: "Multani Mitti Mask", price: [199, 549] },
+    { name: "Aloe Vera Gel", price: [199, 599] },
+    { name: "Sandalwood Soap Bar", price: [99, 299] },
+    { name: "Almond Body Lotion", price: [299, 799] },
+    { name: "Herbal Shampoo", price: [299, 899] },
   ],
 };
 
@@ -106,8 +179,8 @@ const CATEGORY_CODES: Record<string, string> = {
   Beauty: "BEAU",
 };
 
-export function productNamesFor(category: string): string[] {
-  return PRODUCT_NAMES[category] ?? [];
+export function productsFor(category: string): CatalogProduct[] {
+  return PRODUCTS[category] ?? [];
 }
 
 export function skuFor(orgSlug: string, category: string, ordinal: number): string {
@@ -159,13 +232,13 @@ export interface PlantedScenario {
 
 export const PLANTED_SCENARIOS: PlantedScenario[] = [
   {
-    sku: "NW-ELEC-0007",
+    sku: "SR-ELEC-0007",
     label: "Aggressive competitor undercut",
     expectation: "Strong decrease, high confidence, likely auto-executes",
     mutate: () => ({ competitorFactor: 0.85, inventoryLevel: 480 }),
   },
   {
-    sku: "NW-HOME-0012",
+    sku: "SR-HOME-0012",
     label: "Margin floor blocks the obvious move",
     // Competitors have gone below our cost. The commercially "correct" move is
     // impossible, and the compliance agent has to say so.
@@ -173,19 +246,19 @@ export const PLANTED_SCENARIOS: PlantedScenario[] = [
     mutate: (p) => ({ competitorFactor: 0.78, cost: round(p.currentPrice * 0.88) }),
   },
   {
-    sku: "NW-APPA-0003",
+    sku: "SR-APPA-0003",
     label: "Demand surge with low stock",
     expectation: "Price INCREASE, scarcity plus demand",
     mutate: () => ({ inventoryLevel: 11, demandMultiplier: 2.4 }),
   },
   {
-    sku: "MG-OUTD-0005",
+    sku: "BK-OUTD-0005",
     label: "Stale competitor data",
     expectation: "Confidence penalty routes it to a human despite a clear direction",
     mutate: () => ({ competitorAgeDays: 19 }),
   },
   {
-    sku: "MG-BEAU-0009",
+    sku: "BK-BEAU-0009",
     label: "Conflicting signals",
     expectation: "Market says falling, demand says accelerating, disagreement penalty fires",
     mutate: () => ({ competitorFactor: 0.9, demandMultiplier: 1.8 }),

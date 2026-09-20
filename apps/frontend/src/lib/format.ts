@@ -4,9 +4,13 @@
  * the class of bug this product cannot afford.
  */
 
-const CURRENCY = new Intl.NumberFormat("en-US", {
+// en-IN, not en-US with a rupee symbol. The difference is digit grouping:
+// India groups the last three digits then in pairs, so 1234567 is 12,34,567
+// and not 1,234,567. Getting that wrong is the kind of detail an Indian
+// merchandiser notices immediately and reads as "built for somewhere else".
+const CURRENCY = new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "USD",
+  currency: "INR",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -70,5 +74,5 @@ export function duration(ms: number): string {
 }
 
 export function compactNumber(value: number): string {
-  return new Intl.NumberFormat("en-US", { notation: "compact" }).format(value);
+  return new Intl.NumberFormat("en-IN", { notation: "compact" }).format(value);
 }

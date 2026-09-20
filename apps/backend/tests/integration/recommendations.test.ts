@@ -19,14 +19,14 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetDb();
   orgA = await createTestOrg(server, {
-    name: "Northwind Retail",
-    slug: "northwind",
-    products: [product({ sku: "NW-ELEC-0001", currentPrice: 329.99, cost: 210.5, marginFloorPct: 0.15 })],
+    name: "Suvidha Retail",
+    slug: "suvidha",
+    products: [product({ sku: "SR-ELEC-0001", currentPrice: 329.99, cost: 210.5, marginFloorPct: 0.15 })],
   });
   orgB = await createTestOrg(server, {
-    name: "Meridian Goods",
-    slug: "meridian",
-    products: [product({ sku: "MG-OUTD-0001" })],
+    name: "Bazaar Kart",
+    slug: "bazaarkart",
+    products: [product({ sku: "BK-OUTD-0001" })],
   });
 });
 
@@ -105,7 +105,7 @@ describe("GET /recommendations/:id", () => {
       data: {
         recommendationId: rec.id,
         agentName: "MARKET_INTELLIGENCE",
-        input: { sku: "NW-ELEC-0001" },
+        input: { sku: "SR-ELEC-0001" },
         output: { trend: "falling" },
         toolCalls: [{ name: "get_competitor_prices", args: { lookbackDays: 7 } }],
         confidence: 0.91,

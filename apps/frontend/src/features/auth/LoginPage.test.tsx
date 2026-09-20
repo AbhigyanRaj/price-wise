@@ -11,8 +11,8 @@ import { mockFetch, renderWithProviders } from "@/test/renderWithProviders";
  */
 
 const SESSION = {
-  user: { id: "u1", email: "admin@northwind.test", name: "Ada Admin", role: "ADMIN" },
-  organization: { id: "o1", name: "Northwind Retail", confidenceThreshold: 0.8, maxPriceDeltaPct: 0.2 },
+  user: { id: "u1", email: "admin@suvidha.test", name: "Ananya Rao", role: "ADMIN" },
+  organization: { id: "o1", name: "Suvidha Retail", confidenceThreshold: 0.8, maxPriceDeltaPct: 0.2 },
 };
 
 beforeEach(() => {
@@ -36,7 +36,7 @@ describe("sign in", () => {
 
     // This is the product's front door. The seeded accounts belong in the
     // README, and a credential list here reads as a test harness.
-    expect(screen.queryByText(/@northwind\.test/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/@suvidha\.test/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Pricewise2026!/)).not.toBeInTheDocument();
   });
 
@@ -82,7 +82,7 @@ describe("sign in", () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    await user.type(await screen.findByLabelText("Email"), "admin@northwind.test");
+    await user.type(await screen.findByLabelText("Email"), "admin@suvidha.test");
     await user.type(screen.getByLabelText("Password"), "wrong-password");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -102,7 +102,7 @@ describe("sign in", () => {
     const user = userEvent.setup();
     const { queryClient } = renderWithProviders(<LoginPage />);
 
-    await user.type(await screen.findByLabelText("Email"), "admin@northwind.test");
+    await user.type(await screen.findByLabelText("Email"), "admin@suvidha.test");
     await user.type(screen.getByLabelText("Password"), "Pricewise2026!");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 

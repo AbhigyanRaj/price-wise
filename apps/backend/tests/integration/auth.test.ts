@@ -16,10 +16,10 @@ const JSON_HEADERS = {
 };
 
 const ADA = {
-  email: "ada@northwind.test",
+  email: "ananya@suvidha.test",
   password: "Pricewise2026!",
-  name: "Ada Admin",
-  organizationName: "Northwind Retail",
+  name: "Ananya Rao",
+  organizationName: "Suvidha Retail",
 };
 
 function post(path: string, body?: unknown, jar?: CookieJar) {
@@ -58,7 +58,7 @@ describe("POST /auth/signup", () => {
     expect(res.status).toBe(201);
     expect(body.success).toBe(true);
     expect(body.data?.user?.role).toBe("ADMIN");
-    expect(body.data?.organization?.name).toBe("Northwind Retail");
+    expect(body.data?.organization?.name).toBe("Suvidha Retail");
 
     expect(await prisma.organization.count()).toBe(1);
     expect(await prisma.user.count()).toBe(1);
@@ -107,9 +107,9 @@ describe("POST /auth/signup", () => {
   });
 
   test("normalises email case and surrounding whitespace", async () => {
-    await signupWithJar({ email: "  Ada@Northwind.TEST  " });
+    await signupWithJar({ email: "  Ananya@Suvidha.TEST  " });
     const user = await prisma.user.findFirst();
-    expect(user?.email).toBe("ada@northwind.test");
+    expect(user?.email).toBe("ananya@suvidha.test");
   });
 });
 
@@ -133,7 +133,7 @@ describe("POST /auth/login", () => {
       password: "NotThePassword1",
     });
     const unknownEmail = await post("/auth/login", {
-      email: "nobody@northwind.test",
+      email: "nobody@suvidha.test",
       password: "NotThePassword1",
     });
 
@@ -158,7 +158,7 @@ describe("GET /auth/me", () => {
 
     expect(res.status).toBe(200);
     expect(body.data?.user?.email).toBe(ADA.email);
-    expect(body.data?.organization?.name).toBe("Northwind Retail");
+    expect(body.data?.organization?.name).toBe("Suvidha Retail");
   });
 });
 
@@ -258,7 +258,7 @@ describe("cross-cutting middleware", () => {
   test("failed logins do not rate-limit the session check", async () => {
     // A distinct email, because the limiter keys on address AND email: signing
     // up as ADA here would share a key with the failures below.
-    const victim = "sam@northwind.test";
+    const victim = "sam@suvidha.test";
     const { jar } = await signupWithJar({ email: victim });
 
     // Exhaust the brute-force window for a DIFFERENT account on this address.

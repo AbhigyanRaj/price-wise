@@ -92,10 +92,10 @@ credentials for a demo database, not secrets.
 
 | Email | Role | Organization |
 |---|---|---|
-| `admin@northwind.test` | Admin | Northwind Retail |
-| `analyst@northwind.test` | Pricing Analyst | Northwind Retail |
-| `admin@meridian.test` | Admin | Meridian Goods |
-| `analyst@meridian.test` | Pricing Analyst | Meridian Goods |
+| `admin@suvidha.test` | Admin | Suvidha Retail |
+| `analyst@suvidha.test` | Pricing Analyst | Suvidha Retail |
+| `admin@bazaarkart.test` | Admin | Bazaar Kart |
+| `analyst@bazaarkart.test` | Pricing Analyst | Bazaar Kart |
 
 **The two organizations are the multi-tenancy demo.** They share a database and
 a schema, have zero overlapping SKUs, and different auto-execution policies
@@ -126,11 +126,11 @@ The seed plants five scenarios that each exercise a different branch:
 
 | SKU | What it demonstrates |
 |---|---|
-| `NW-ELEC-0001` | Aggressive competitor undercut |
-| `NW-ELEC-0007` | Margin floor blocks the obvious move |
-| `NW-APPA-0003` | Demand surge with low stock |
-| `MG-OUTD-0005` | Stale data penalty routes it to a human |
-| `MG-BEAU-0009` | Market and demand disagree, disagreement penalty fires |
+| `SR-ELEC-0001` | Aggressive competitor undercut |
+| `SR-ELEC-0007` | Margin floor blocks the obvious move |
+| `SR-APPA-0003` | Demand surge with low stock |
+| `BK-OUTD-0005` | Stale data penalty routes it to a human |
+| `BK-BEAU-0009` | Market and demand disagree, disagreement penalty fires |
 
 ---
 

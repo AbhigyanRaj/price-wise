@@ -2232,21 +2232,21 @@ shapes, so the demo's tenant-isolation moment is visually obvious.
 ```ts
 export const ORGS = [
   {
-    name: "Northwind Retail",
+    name: "Suvidha Retail",
     confidenceThreshold: 0.85,
     users: [
-      { email: "admin@northwind.test",   name: "Ada Admin",     role: "ADMIN" },
-      { email: "analyst@northwind.test", name: "Alan Analyst",  role: "PRICING_ANALYST" },
+      { email: "admin@suvidha.test",   name: "Ananya Rao",     role: "ADMIN" },
+      { email: "analyst@suvidha.test", name: "Rohan Mehta",  role: "PRICING_ANALYST" },
     ],
     categories: ["Electronics", "Home & Kitchen", "Apparel"],
     skuCount: 28,
   },
   {
-    name: "Meridian Goods",
+    name: "Bazaar Kart",
     confidenceThreshold: 0.75,        // deliberately lower — more auto-executions
     users: [
-      { email: "admin@meridian.test",   name: "Maya Admin",    role: "ADMIN" },
-      { email: "analyst@meridian.test", name: "Marco Analyst", role: "PRICING_ANALYST" },
+      { email: "admin@bazaarkart.test",   name: "Priya Nair",    role: "ADMIN" },
+      { email: "analyst@bazaarkart.test", name: "Vikram Shah", role: "PRICING_ANALYST" },
     ],
     categories: ["Electronics", "Outdoor", "Beauty"],
     skuCount: 26,
@@ -2304,33 +2304,33 @@ handful of products are deliberately placed in interesting states:
 ```ts
 export const PLANTED_SCENARIOS = [
   {
-    sku: "NW-ELEC-0007",
+    sku: "SR-ELEC-0007",
     label: "Aggressive competitor undercut",
     mutate: (p) => ({ competitorDropPct: 0.15, inventoryLevel: 480 }),
     // Expect: strong decrease recommendation, high confidence, likely auto-execute
   },
   {
-    sku: "NW-HOME-0012",
+    sku: "SR-HOME-0012",
     label: "Margin floor blocks the obvious move",
     mutate: (p) => ({ competitorDropPct: 0.22, cost: p.currentPrice * 0.88 }),
     // Expect: compliance agent BLOCKS or ADJUSTS — the price competitors set
     // is below this org's cost floor. Excellent thing to demo.
   },
   {
-    sku: "NW-APPA-0003",
+    sku: "SR-APPA-0003",
     label: "Demand surge with low stock",
     mutate: (p) => ({ demandSpike: 2.4, inventoryLevel: 11 }),
     // Expect: price INCREASE recommendation — scarcity plus demand
   },
   {
-    sku: "MG-OUTD-0005",
+    sku: "BK-OUTD-0005",
     label: "Stale competitor data",
     mutate: (p) => ({ competitorDataAgeDays: 19 }),
     // Expect: confidence penalty applied, routed to human even though the
     // direction is clear. Demonstrates the confidence formula visibly.
   },
   {
-    sku: "MG-BEAU-0009",
+    sku: "BK-BEAU-0009",
     label: "Conflicting signals",
     mutate: (p) => ({ competitorDropPct: 0.10, demandSpike: 1.8 }),
     // Expect: agents disagree on direction, disagreement penalty fires,
@@ -4705,9 +4705,9 @@ Three journeys, matching exactly what the assessment asks you to demo live:
 
 ```ts
 test("generates a recommendation and approves it", async ({ page }) => {
-  await loginAs(page, "analyst@northwind.test");
+  await loginAs(page, "analyst@suvidha.test");
   await page.goto("/products");
-  await page.getByRole("row", { name: /NW-ELEC-0007/ }).getByRole("button", { name: "Generate" }).click();
+  await page.getByRole("row", { name: /SR-ELEC-0007/ }).getByRole("button", { name: "Generate" }).click();
 
   // All five agents appear and complete.
   for (const agent of AGENTS) {
@@ -4724,22 +4724,22 @@ test("generates a recommendation and approves it", async ({ page }) => {
 
 ```ts
 test("organizations cannot see each other's data", async ({ browser }) => {
-  const northwind = await browser.newContext();
-  const meridian  = await browser.newContext();
+  const suvidha = await browser.newContext();
+  const bazaarkart  = await browser.newContext();
 
-  const p1 = await northwind.newPage();
-  const p2 = await meridian.newPage();
+  const p1 = await suvidha.newPage();
+  const p2 = await bazaarkart.newPage();
 
-  await loginAs(p1, "analyst@northwind.test");
-  await loginAs(p2, "analyst@meridian.test");
+  await loginAs(p1, "analyst@suvidha.test");
+  await loginAs(p2, "analyst@bazaarkart.test");
 
   await p1.goto("/products");
-  const northwindSkus = await p1.getByTestId("product-sku").allInnerTexts();
+  const suvidhaSkus = await p1.getByTestId("product-sku").allInnerTexts();
 
   await p2.goto("/products");
-  const meridianSkus = await p2.getByTestId("product-sku").allInnerTexts();
+  const bazaarSkus = await p2.getByTestId("product-sku").allInnerTexts();
 
-  expect(intersection(northwindSkus, meridianSkus)).toHaveLength(0);
+  expect(intersection(suvidhaSkus, bazaarSkus)).toHaveLength(0);
 
   // Direct URL access to the other tenant's resource.
   const id = await getFirstProductId(p1);

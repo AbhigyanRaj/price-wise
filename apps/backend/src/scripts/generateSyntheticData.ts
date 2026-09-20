@@ -4,7 +4,7 @@ import {
   highestPlantedOrdinal,
   ORGS,
   PLANTED_SCENARIOS,
-  productNamesFor,
+  productsFor,
   skuFor,
   type SeedOrg,
 } from "./catalog";
@@ -108,7 +108,7 @@ export function generateCatalog(org: SeedOrg, seed: number): GeneratedProduct[] 
     const profile = CATEGORY_PROFILES[category];
     if (!profile) throw new Error(`No profile for category ${category}`);
 
-    const names = productNamesFor(category);
+    const catalogProducts = productsFor(category);
 
     // Generate at least enough for any planted scenario in this category. The
     // total may then slightly exceed skuCount, which is the right trade: a
@@ -118,9 +118,12 @@ export function generateCatalog(org: SeedOrg, seed: number): GeneratedProduct[] 
     for (let i = 0; i < count; i++) {
       // Ordinal restarts per category.
       const sku = skuFor(org.slug, category, i + 1);
-      const name = names[i % names.length] ?? `${category} Item ${i + 1}`;
+      const seed = catalogProducts[i % catalogProducts.length];
+      const name = seed?.name ?? `${category} Item ${i + 1}`;
 
-      const currentPrice = round2(rng.between(profile.priceRange[0], profile.priceRange[1]));
+      // The product's own band, not the category's. See PRODUCTS in catalog.ts.
+      const band = seed?.price ?? profile.priceRange;
+      const currentPrice = round2(rng.between(band[0], band[1]));
       const margin = rng.between(profile.marginRange[0], profile.marginRange[1]);
       const cost = round2(currentPrice * (1 - margin));
 

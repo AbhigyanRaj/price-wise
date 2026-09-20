@@ -24,14 +24,14 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetDb();
   orgA = await createTestOrg(server, {
-    name: "Northwind Retail",
-    slug: "northwind",
-    products: [product({ sku: "NW-ELEC-0001" })],
+    name: "Suvidha Retail",
+    slug: "suvidha",
+    products: [product({ sku: "SR-ELEC-0001" })],
   });
   orgB = await createTestOrg(server, {
-    name: "Meridian Goods",
-    slug: "meridian",
-    products: [product({ sku: "MG-OUTD-0001" })],
+    name: "Bazaar Kart",
+    slug: "bazaarkart",
+    products: [product({ sku: "BK-OUTD-0001" })],
   });
 });
 

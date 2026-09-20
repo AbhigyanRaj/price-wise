@@ -28,14 +28,14 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetDb();
   orgA = await createTestOrg(server, {
-    name: "Northwind Retail",
-    slug: "northwind",
-    products: [product({ sku: "NW-ELEC-0001" })],
+    name: "Suvidha Retail",
+    slug: "suvidha",
+    products: [product({ sku: "SR-ELEC-0001" })],
   });
   orgB = await createTestOrg(server, {
-    name: "Meridian Goods",
-    slug: "meridian",
-    products: [product({ sku: "MG-OUTD-0001" })],
+    name: "Bazaar Kart",
+    slug: "bazaarkart",
+    products: [product({ sku: "BK-OUTD-0001" })],
   });
 });
 
@@ -45,14 +45,14 @@ describe("product CRUD", () => {
       server,
       "POST",
       "/products",
-      product({ sku: "NW-ELEC-0002", name: "Second Widget" }),
+      product({ sku: "SR-ELEC-0002", name: "Second Widget" }),
       orgA.adminJar,
     );
     expect(res.status).toBe(201);
 
     const list = await api(server, "GET", "/products?search=Second", undefined, orgA.analystJar);
     const body = (await list.json()) as { data: { sku: string }[] };
-    expect(body.data.map((p) => p.sku)).toContain("NW-ELEC-0002");
+    expect(body.data.map((p) => p.sku)).toContain("SR-ELEC-0002");
   });
 
   test("the write is recorded in the audit trail", async () => {
@@ -60,7 +60,7 @@ describe("product CRUD", () => {
       server,
       "POST",
       "/products",
-      product({ sku: "NW-ELEC-0003" }),
+      product({ sku: "SR-ELEC-0003" }),
       orgA.adminJar,
     );
 
@@ -74,7 +74,7 @@ describe("product CRUD", () => {
       server,
       "POST",
       "/products",
-      product({ sku: "NW-ELEC-0001" }),
+      product({ sku: "SR-ELEC-0001" }),
       orgA.adminJar,
     );
     expect(res.status).toBe(409);
@@ -87,7 +87,7 @@ describe("product CRUD", () => {
       server,
       "POST",
       "/products",
-      product({ sku: "NW-ELEC-0004", currentPrice: 50, cost: 120 }),
+      product({ sku: "SR-ELEC-0004", currentPrice: 50, cost: 120 }),
       orgA.adminJar,
     );
     expect(res.status).toBe(422);
@@ -142,7 +142,7 @@ describe("product writes are gated", () => {
       server,
       "POST",
       "/products",
-      product({ sku: "NW-ELEC-0009" }),
+      product({ sku: "SR-ELEC-0009" }),
       orgA.analystJar,
     );
     expect(create.status).toBe(403);

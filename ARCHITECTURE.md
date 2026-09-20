@@ -385,7 +385,7 @@ lands on a forbidden page rather than a broken screen.
 **Proof, run against the live API:**
 
 ```
-Meridian admin requests a Northwind product   →  404  "Product not found"
+Bazaar Kart admin requests a Suvidha product   →  404  "Product not found"
 Analyst PATCH /org/settings                   →  403  FORBIDDEN_ROLE
 Analyst GET  /org/members                     →  403
 ```

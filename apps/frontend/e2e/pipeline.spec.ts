@@ -8,8 +8,8 @@ import { expect, test, type Page } from "@playwright/test";
  * layer below is already covered in isolation.
  */
 
-const ADMIN = { email: "admin@northwind.test", password: "Pricewise2026!" };
-const ANALYST = { email: "analyst@northwind.test", password: "Pricewise2026!" };
+const ADMIN = { email: "admin@suvidha.test", password: "Pricewise2026!" };
+const ANALYST = { email: "analyst@suvidha.test", password: "Pricewise2026!" };
 
 async function signIn(page: Page, who: { email: string; password: string }) {
   await page.goto("/login");
@@ -31,7 +31,7 @@ test.describe("the decision journey", () => {
     // the two-tenant story visible without navigating anywhere.
     // Scoped to the banner: the Overview heading is the org name too, and an
     // unscoped match would be ambiguous rather than wrong.
-    await expect(page.getByRole("banner").getByText("Northwind Retail")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Suvidha Retail")).toBeVisible();
 
     await page.getByRole("link", { name: "Decisions" }).click();
     await expect(page).toHaveURL(/\/decisions$/);

@@ -23,18 +23,18 @@ beforeEach(async () => {
   await resetDb();
 
   orgA = await createTestOrg(server, {
-    name: "Northwind Retail",
-    slug: "northwind",
+    name: "Suvidha Retail",
+    slug: "suvidha",
     products: [
-      product({ sku: "NW-ELEC-0001", name: "Northwind Headphones" }),
-      product({ sku: "NW-HOME-0002", name: "Northwind Kettle", category: "Home & Kitchen" }),
+      product({ sku: "SR-ELEC-0001", name: "Suvidha Headphones" }),
+      product({ sku: "SR-HOME-0002", name: "Suvidha Kettle", category: "Home & Kitchen" }),
     ],
   });
 
   orgB = await createTestOrg(server, {
-    name: "Meridian Goods",
-    slug: "meridian",
-    products: [product({ sku: "MG-OUTD-0001", name: "Meridian Tent", category: "Outdoor" })],
+    name: "Bazaar Kart",
+    slug: "bazaarkart",
+    products: [product({ sku: "BK-OUTD-0001", name: "Bazaar Kart Tent", category: "Outdoor" })],
   });
 });
 
@@ -54,7 +54,7 @@ describe("tenant isolation, Product", () => {
     const body = (await res.json()) as { data: { sku: string }[]; pagination: { totalCount: number } };
 
     const skus = body.data.map((p) => p.sku);
-    expect(skus).toEqual(["MG-OUTD-0001"]);
+    expect(skus).toEqual(["BK-OUTD-0001"]);
     for (const sku of orgA.skus) expect(skus).not.toContain(sku);
     // The count must also be scoped, or pagination leaks the other org's size.
     expect(body.pagination.totalCount).toBe(1);
@@ -119,8 +119,8 @@ describe("tenant isolation, Organization settings", () => {
     const a = (await aRes.json()) as { data: { name: string; confidenceThreshold: number } };
     const b = (await bRes.json()) as { data: { name: string; confidenceThreshold: number } };
 
-    expect(a.data.name).toBe("Northwind Retail");
-    expect(b.data.name).toBe("Meridian Goods");
+    expect(a.data.name).toBe("Suvidha Retail");
+    expect(b.data.name).toBe("Bazaar Kart");
     // Org B's change must not have touched Org A.
     expect(a.data.confidenceThreshold).toBe(aThresholdBefore);
     expect(b.data.confidenceThreshold).toBe(0.75);
@@ -131,9 +131,9 @@ describe("tenant isolation, Organization settings", () => {
     const body = (await res.json()) as { data: { email: string }[] };
 
     const emails = body.data.map((u) => u.email);
-    expect(emails).toContain("admin@northwind.test");
-    expect(emails).toContain("analyst@northwind.test");
-    expect(emails).not.toContain("admin@meridian.test");
+    expect(emails).toContain("admin@suvidha.test");
+    expect(emails).toContain("analyst@suvidha.test");
+    expect(emails).not.toContain("admin@bazaarkart.test");
   });
 });
 
@@ -143,7 +143,7 @@ describe("tenant isolation, Invite", () => {
       server,
       "POST",
       "/org/invites",
-      { email: "newcomer@northwind.test", role: "PRICING_ANALYST" },
+      { email: "newcomer@suvidha.test", role: "PRICING_ANALYST" },
       orgA.adminJar,
     );
     const invite = (await created.json()) as { data: { id: string } };
@@ -166,7 +166,7 @@ describe("tenant isolation, Invite", () => {
       server,
       "POST",
       "/org/invites",
-      { email: "intended@northwind.test", role: "PRICING_ANALYST" },
+      { email: "intended@suvidha.test", role: "PRICING_ANALYST" },
       orgA.adminJar,
     );
     const invite = (await created.json()) as { data: { code: string } };
@@ -187,13 +187,13 @@ describe("tenant isolation, Invite", () => {
       server,
       "POST",
       "/org/invites",
-      { email: "once@northwind.test", role: "PRICING_ANALYST" },
+      { email: "once@suvidha.test", role: "PRICING_ANALYST" },
       orgA.adminJar,
     );
     const invite = (await created.json()) as { data: { code: string } };
 
     const body = {
-      email: "once@northwind.test",
+      email: "once@suvidha.test",
       password: "Pricewise2026!",
       name: "Once",
       inviteCode: invite.data.code,
@@ -231,7 +231,7 @@ describe("client-supplied organizationId is ignored", () => {
     );
     const body = (await res.json()) as { data: { sku: string }[] };
 
-    expect(body.data.map((p) => p.sku)).toEqual(["MG-OUTD-0001"]);
+    expect(body.data.map((p) => p.sku)).toEqual(["BK-OUTD-0001"]);
   });
 });
 
@@ -282,7 +282,7 @@ describe("RBAC is enforced server-side", () => {
       server,
       "POST",
       "/org/invites",
-      { email: "x@northwind.test", role: "ADMIN" },
+      { email: "x@suvidha.test", role: "ADMIN" },
       orgA.analystJar,
     );
 

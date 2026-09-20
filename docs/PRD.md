@@ -315,10 +315,10 @@ Written in the canonical form, because these drive the screen specs.
 
 ## 7.5 Journey E — Two organizations, zero overlap
 
-1. Priya (Northwind Retail) and Marco (Meridian Goods) are both logged in.
+1. Priya (Suvidha Retail) and Marco (Bazaar Kart) are both logged in.
 2. Their catalogs share zero SKUs. Their dashboards show different numbers. Their org names are in their headers.
-3. Marco pastes a Northwind product URL into his browser. He gets a not-found page — not a permission error, because confirming the resource exists would itself be a leak.
-4. Meridian's confidence threshold is 0.75 versus Northwind's 0.85, so identical market conditions produce different auto-execution behaviour between the two tenants.
+3. Marco pastes a Suvidha product URL into his browser. He gets a not-found page — not a permission error, because confirming the resource exists would itself be a leak.
+4. Bazaar Kart's confidence threshold is 0.75 versus Suvidha's 0.85, so identical market conditions produce different auto-execution behaviour between the two tenants.
 
 **Outcome:** isolation is demonstrable in thirty seconds of screen-sharing.
 

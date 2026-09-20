@@ -35,9 +35,9 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetDb();
   org = await createTestOrg(server, {
-    name: "Northwind Retail",
-    slug: "northwind",
-    products: [product({ sku: "NW-ELEC-0001", currentPrice: 329.99, cost: 210.5 })],
+    name: "Suvidha Retail",
+    slug: "suvidha",
+    products: [product({ sku: "SR-ELEC-0001", currentPrice: 329.99, cost: 210.5 })],
   });
 });
 
