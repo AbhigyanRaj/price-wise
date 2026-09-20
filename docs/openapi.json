@@ -8,7 +8,7 @@
   "servers": [
     {
       "url": "https://price-wise-x14b.onrender.com",
-      "description": "Production. Render's free tier spins down after about fifteen minutes idle, so the first request can take roughly 35 seconds.\n"
+      "description": "Production, on Render. Kept warm by a scheduled ping."
     },
     {
       "url": "http://localhost:4000",
