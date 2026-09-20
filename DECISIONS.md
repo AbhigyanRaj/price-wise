@@ -259,13 +259,15 @@ decision rather than making one:
 |---|---|
 | Postgres RLS | Defence in depth, not the primary control |
 | URL-synced filter state | Real UX polish, invisible in a demo |
-| Bulk approve | The single-item flow proves the same concurrency guarantee |
-| Two of three Playwright specs | One end-to-end spec covers the critical journey |
+| Bulk approve | Cut, then built anyway once the single-item path was solid: partial success needed stating plainly rather than a count that lies |
+| Two of three Playwright specs | One spec, five tests, covering the critical journey. Running it for the first time found four real bugs, which says the cut was right but the delay was not |
 | Dashboard charts | Not required by Option B; the waterfall is the chart that matters |
 
 Deliberately **not** cut, in priority order: the five-agent pipeline working end
-to end, tenant isolation and its tests, the three documents, a deployed URL, and
-seed data a reviewer can use immediately.
+to end, tenant isolation and its tests, the three documents, and seed data a
+reviewer can use immediately. A deployed URL sits behind those: the brief lists
+deployment as a bonus, and a working local clone was worth more than a live one
+that had cost time the pipeline needed.
 
 Two honest process notes:
 
@@ -274,10 +276,11 @@ five-day build is more specification than the timeline warranted. It paid off in
 consistency and it is why this document could be assembled rather than invented,
 but a day of it would have been better spent on the frontend.
 
-**I under-tested the frontend relative to the backend.** 98 backend tests against
-48 frontend ones, and the frontend tests cluster on pure logic (the SSE parser,
-colour contrast, metric formatting) because those are cheap. Component
-interaction tests are thinner than they should be.
+**I under-tested the frontend relative to the backend.** 132 backend tests
+against 96 frontend ones, and the frontend ones still cluster on pure logic (the
+SSE parser, colour contrast, metric formatting, CSV escaping) because those are
+cheap. Component interaction tests are thinner than they should be, and the
+five end-to-end tests are carrying more of that weight than they ought to.
 
 ---
 

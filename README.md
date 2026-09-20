@@ -1,8 +1,22 @@
 # Pricewise
 
-A multi-tenant pricing tool where five AI agents produce a price recommendation
-with a confidence score, and a human approves, rejects or overrides it before
-anything reaches the storefront.
+**The problem.** A mid-size retailer sells 500+ SKUs and reprices them by hand,
+once a week, in a spreadsheet. A competitor drops a price on Tuesday and
+nothing happens until the following Monday. That lag leaks an estimated 8 to
+12% of revenue, slow-moving stock gets marked down instead of repriced, demand
+spikes pass unexploited, and a team of six analysts spends most of its week
+gathering data rather than deciding anything.
+
+**What this does.** Five AI agents watch the catalogue and propose a price for
+any product, each agent owning one question: where the market is, what the
+product costs us, where demand is going, what price follows from all three, and
+whether that price is allowed. Each recommendation carries a confidence score
+and a written rationale.
+
+**Who decides.** A human. Nothing reaches the storefront without approval,
+unless it clears a confidence threshold the organization sets for itself. An
+analyst can approve, reject with a reason, or override the price, and every
+outcome is recorded against a person or against the system.
 
 Built for the Klypup Applied AI Intern assessment, **Option B: Dynamic Pricing
 Intelligence**.
@@ -10,9 +24,11 @@ Intelligence**.
 | | |
 |---|---|
 | **Live** | _not yet deployed_ |
-| **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| **Decisions** | [DECISIONS.md](DECISIONS.md) |
-| **API contract** | [docs/openapi.yaml](docs/openapi.yaml) |
+| **Architecture, six diagrams** | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| **Design canvas** | [docs/Pricewise_HLD.excalidraw](docs/Pricewise_HLD.excalidraw) · [PNG](docs/Pricewise_HLD.png) |
+| **Decisions and trade-offs** | [DECISIONS.md](DECISIONS.md) |
+| **API contract, 34 operations** | [docs/openapi.yaml](docs/openapi.yaml) · [JSON](docs/openapi.json) |
+| **Environment variables** | [apps/backend/.env.example](apps/backend/.env.example) |
 
 ---
 
@@ -36,10 +52,11 @@ one.
 
 ## Running it
 
-**Requirements:** [Docker](https://docs.docker.com/get-docker/) and
-[Bun](https://bun.sh) 1.3+, plus a free
-[Groq API key](https://console.groq.com/keys). Docker supplies PostgreSQL; if
-you would rather use your own, see the second path below.
+**For the one-command path:** [Docker](https://docs.docker.com/get-docker/)
+and a free [Groq API key](https://console.groq.com/keys). That is all.
+
+**For the Bun path:** additionally [Bun](https://bun.sh) 1.3+. Docker still
+supplies PostgreSQL unless you point `DATABASE_URL` at your own.
 
 ### Everything in one command
 
@@ -87,8 +104,17 @@ and change the port in `DATABASE_URL` to match.
 
 ### Sign in
 
-Seeded accounts, all with the password `Pricewise2026!`. These are throwaway
-credentials for a demo database, not secrets.
+Seeded accounts, all with the password `Pricewise2026!`.
+
+**Why these are in a public repository.** This is an assessment submission, and
+an evaluator has to be able to sign in without waiting on an email. The four
+accounts below do not exist anywhere until `db:seed` creates them, they live in
+a database that is dropped and rebuilt every time that command runs, and they
+grant access to nothing but a catalogue of invented products. There is no real
+user, no real store and no real money behind any of them. The password is a
+seed constant in `apps/backend/src/scripts/catalog.ts`, not a secret, and the
+only genuine secrets this project has, the Groq key and the two JWT signing
+keys, are in `.env` and gitignored.
 
 | Email | Role | Organization |
 |---|---|---|
@@ -106,21 +132,43 @@ code at `/join`.
 
 ---
 
-## What to look at
+## Five minutes, in order
 
-**Catalog → open a product → Generate recommendation.** Five agents run live
-over SSE. The two that run concurrently start on the same millisecond, which is
-the architecture visible on screen rather than asserted in a diagram. Takes
-about 8 seconds.
+Sign in as `admin@suvidha.test`.
 
-**Decisions → open one.** The rationale first, then the confidence broken into
-a base score and named deductions, then every agent with the tools it called,
-the arguments it chose and the source that answered. Nothing in that view is a
-number you have to trust.
+**1 · Overview.** What needs a decision today, and what the queue is worth in
+money rather than in row count.
 
-**Try to break it.** Modify a recommendation to a price below cost. A human
-override is checked against the same margin floor as the AI, and comes back
-with the rule that stopped it.
+**2 · Products → open any product → Generate recommendation.** The main event.
+Five agents run live over SSE, about 8 to 12 seconds. The two in wave 1 start
+on the same millisecond, so the concurrency is visible on screen rather than
+asserted in a diagram. It ends by either auto-executing or saying it is waiting
+on you, depending on the confidence it reached.
+
+**3 · Decisions → open one.** Price and confidence first, because that is the
+decision. Then what changes if you take it. Then what each agent contributed,
+with the tools it chose to call, the arguments it chose, and what answered.
+Nothing in that view is a number you have to take on trust.
+
+**4 · Approve it.** `A` approves, `R` rejects, `J` and `K` move. An undo
+appears for a few seconds, and the queue advances to the next decision rather
+than emptying.
+
+**5 · Try to break it.** Modify a recommendation to a price below cost. A human
+override is checked against the same margin floor the AI was, and comes back
+naming the rule that stopped it.
+
+**6 · Activity.** Every change, who made it, before and after. "Pricewise" in
+the actor column means it executed without a human.
+
+**7 · Settings.** Drag the confidence threshold and watch the histogram of the
+last 50 runs: it shows how many decisions you would be handing to the machine
+before you commit to it.
+
+**8 · Sign out, sign in as `admin@bazaarkart.test`.** A different company.
+Different catalogue, different threshold, no overlap. Then try
+`analyst@suvidha.test`: Settings disappears, and typing `/settings` into the
+address bar is refused by the API, not just hidden by the UI.
 
 The seed plants five scenarios that each exercise a different branch:
 
@@ -290,12 +338,59 @@ recommendation that breaches the margin floor still goes to a human.
 
 ---
 
+## Environment
+
+Two files, both with a committed `.env.example` that lists every key with what
+it is for.
+
+| | |
+|---|---|
+| **Backend** | [`apps/backend/.env.example`](apps/backend/.env.example) → copy to `apps/backend/.env` |
+| **Frontend** | [`apps/frontend/.env.example`](apps/frontend/.env.example) → optional, see below |
+
+**The only one you must set** is `GROQ_API_KEY`, free from
+[console.groq.com/keys](https://console.groq.com/keys). Every other default in
+the backend example works as it stands for local development.
+
+For anything other than localhost you also need real signing keys:
+
+```bash
+openssl rand -base64 48   # run twice, JWT_ACCESS_SECRET and JWT_REFRESH_SECRET
+```
+
+They must differ. A refresh token that verifies against the access secret is a
+refresh token that works as an access token.
+
+**The backend keys worth understanding:**
+
+| Key | Why it exists |
+|---|---|
+| `DATABASE_URL` | Pooled connection. Supabase's pooler in production. |
+| `DIRECT_URL` | Unpooled, used only by `prisma migrate`. Leave unset locally. |
+| `COOKIE_SECURE` | One flag drives both `Secure` and `SameSite`. `true` gives `None`+`Secure`, which a cross-site deployment requires; `false` gives `Lax` for local HTTP. Deriving both from one flag makes the invalid combination, `None` without `Secure`, unrepresentable. |
+| `CORS_ORIGIN` | The frontend's exact origin. No wildcards: credentialed requests forbid them. |
+| `GROQ_MODEL_FAST` / `_STRONG` | Two tiers. The three analysis agents use the fast one, synthesis and compliance use the strong one. |
+| `MOCK_PLATFORM_FAILURE_RATE` | Probability a simulated price push fails. `0` for deterministic runs, `1` to demonstrate rollback. |
+
+**The frontend has one variable**, `VITE_API_URL`, and it is deliberately unset
+for both local development and Docker. It defaults to the relative path `/api`,
+which Vite proxies in dev and nginx proxies in Docker. Keeping the API
+same-origin means the auth cookie stays `SameSite=Lax` and there is no CORS
+preflight at all. Set it only for a split deployment, and then
+`COOKIE_SECURE=true` on the backend is mandatory rather than optional.
+
+Only `lib/env.ts` reads `process.env`. It parses everything with Zod at boot
+and crashes on anything missing or malformed, so a misconfigured deploy fails
+immediately instead of 500ing on a reviewer's first click.
+
+---
+
 ## Tests
 
 ```bash
 bun run typecheck && bun run lint
-bun run test            # 227 tests: 131 backend, 96 frontend
-bun run test:e2e        # 5 Playwright specs, needs the stack running
+bun run test            # 228 tests: 132 backend, 96 frontend
+bun run test:e2e        # 5 end-to-end tests in 1 spec, needs the stack running
 ```
 
 Backend tests need a database: `TEST_DATABASE_URL=... bun run --cwd apps/backend test:setup` first.
@@ -315,9 +410,31 @@ checks 21 colour pairs against WCAG AA in **both** themes, which already caught
 one failing value in the design handoff.
 
 CI runs typecheck, lint, the full suite against a Postgres service container,
-and a production build.
+a production build, and a check that the API document still matches the routes.
 
 ---
+
+## Beyond the brief
+
+Built because the product needed it, and listed here because none of it is
+visible from the screens:
+
+| | Where |
+|---|---|
+| **Real-time streaming** | SSE, six named events, `apps/backend/src/controllers/stream.controller.ts` |
+| **One-command setup** | `docker compose up --build`, four services, migrated and seeded |
+| **CI/CD** | [`.github/workflows/ci.yml`](.github/workflows/ci.yml): typecheck, lint, tests, build, contract check |
+| **Infrastructure as code** | [`render.yaml`](render.yaml), a Render blueprint with the health gate wired in |
+| **Observability** | `/healthz` pings the database, so a bad `DATABASE_URL` fails the deploy rather than shipping a service that 500s. Structured logging via pino, every line carrying a request id. |
+| **Caching** | `apps/backend/src/agents/cache.ts` keys on the full prompt, so a changed prompt cannot serve a stale answer. Cuts the free-tier bill and makes repeat demos fast. |
+| **Rate limiting** | Two limiters: a broad one per IP, and a brute-force one on the three routes that take a password, keyed on address **and** email so one account's failures cannot lock out another's |
+| **Export** | CSV of the decisions queue, RFC 4180 escaped, with a guard against formula injection |
+| **Explainability** | Every agent run persists its tool calls, arguments and token counts. The detail view renders them; nothing on it is a number you have to trust. |
+| **Accessibility** | A test parses the shipped stylesheet and checks 21 colour pairs against WCAG AA in both themes |
+
+**Not built:** A/B price testing. It is one bonus of eleven and roughly a day
+of work, and the day was better spent on the items above. Recorded as a
+deliberate cut in [DECISIONS.md](DECISIONS.md).
 
 ---
 

@@ -19,9 +19,11 @@ src/generated/
 # .env.example is the documented template every setup depends on, so the
 # broad .env.* rule above must not swallow it.
 !.env.example
-# Committed deliberately: VITE_API_URL is a public build-time constant baked
-# into the JS bundle, not a secret. Committing it keeps the Vercel build
-# reproducible and removes a dashboard variable that can silently drift.
+# Allowed through deliberately, for when the split deployment needs it:
+# VITE_API_URL is a public build-time constant baked into the JS bundle, not a
+# secret, so committing it keeps the Vercel build reproducible instead of
+# depending on a dashboard variable that can drift. The file does not exist
+# yet; apps/frontend/.env.example documents what goes in it.
 !apps/frontend/.env.production
 
 # The assessment brief. Klypup's document, marked Confidential in its footer,

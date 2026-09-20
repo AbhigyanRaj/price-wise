@@ -23,6 +23,13 @@ reasoning the canvas has no room for.
 
 ## 1. System architecture
 
+> **Vercel, Render and Supabase below are the target topology, not a running
+> system.** Nothing is deployed yet. They are named rather than left abstract
+> because several decisions only make sense against them: `SameSite=None`
+> exists because the browser origin and the API origin differ, and the absent
+> `COOKIE_DOMAIN` exists because `onrender.com` is on the Public Suffix List.
+> [`render.yaml`](render.yaml) is the blueprint that provisions the API.
+
 ```mermaid
 graph TB
     subgraph browser["Browser"]
