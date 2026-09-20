@@ -32,7 +32,19 @@ export function AppShell() {
   }
 
   return (
-    <div className="noise flex min-h-dvh flex-col bg-bg text-t1">
+    // h-dvh, NOT min-h-dvh.
+    //
+    // A minimum let the shell grow with its content, and a flex row stretches
+    // its items to the row's height, so on a long page the rail became as tall
+    // as the whole scrolled document. `mt-auto` then pinned sign-out to the
+    // bottom of a two-thousand-pixel rail, which is well below the fold: the
+    // button looked correctly placed on Overview and vanished on Products and
+    // Settings. Nothing was conditionally rendered, it was just off screen.
+    //
+    // A definite height also makes `main` the scroll container, which is what
+    // `overflow-y-auto` there always intended. Previously the window scrolled
+    // and that rule did nothing.
+    <div className="noise flex h-dvh flex-col bg-bg text-t1">
       <TopBar
         session={session}
         pendingCount={pendingCount}
@@ -41,7 +53,10 @@ export function AppShell() {
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Rail isAdmin={isAdmin} pendingCount={pendingCount} onSignOut={handleSignOut} />
-        <main className="min-w-0 flex-1 overflow-y-auto">
+        {/* min-h-0 is load-bearing: a flex item's default min-height is auto,
+            which refuses to shrink below its content, and overflow-y-auto on a
+            box that never shrinks can never scroll. */}
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router";
-import { Boxes, Gauge, LogOut, ScrollText, Settings, Sparkles } from "lucide-react";
+import { Boxes, Gauge, ListChecks, LogOut, ScrollText, Settings } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export interface RailItem {
@@ -14,7 +14,11 @@ export interface RailItem {
 export const RAIL_ITEMS: RailItem[] = [
   { to: "/", label: "Overview", Icon: Gauge },
   { to: "/products", label: "Products", Icon: Boxes },
-  { to: "/decisions", label: "Decisions", Icon: Sparkles },
+  // ListChecks, not Sparkles. This screen is a queue a human works
+  // through and signs off; a sparkle says "magic happened here", which is
+  // both the wrong promise and the visual cliche of every AI product
+  // shipped since 2023.
+  { to: "/decisions", label: "Decisions", Icon: ListChecks },
   { to: "/activity", label: "Activity", Icon: ScrollText },
   { to: "/settings", label: "Settings", Icon: Settings, adminOnly: true },
 ];

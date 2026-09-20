@@ -76,7 +76,7 @@ export const AUTH_LINK = "font-medium text-t0 underline-offset-2 hover:underline
  * the canvas, which has to check the query itself.
  */
 function rise(delay: number): React.CSSProperties {
-  return { animation: "pwAuthIn 480ms var(--ease-spatial) both", animationDelay: `${delay}ms` };
+  return { animation: "pwRise 480ms var(--ease-spatial) both", animationDelay: `${delay}ms` };
 }
 
 export function AuthLayout({

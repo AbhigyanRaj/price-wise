@@ -88,15 +88,25 @@ export function CategoryRulesSection() {
       )}
 
       {existing.length > 0 && (
-        <ul className="mt-4 divide-y divide-line2 border-y border-line">
+        <>
+          {/* A header for the list it sits above. The three form labels
+              underneath used to be the only column names on screen, so they
+              read as a header for this list while belonging to the form. */}
+          <div className="mt-4 flex items-center gap-3 border-b border-line pb-1.5">
+            <span className="eyebrow flex-1">Category</span>
+            <span className="eyebrow w-[90px] text-right">Floor</span>
+            <span className="eyebrow w-[76px] text-right">Max change</span>
+            <span className="w-[26px]" aria-hidden="true" />
+          </div>
+          <ul className="divide-y divide-line2 border-b border-line">
           {existing.map((rule) => (
             <li key={rule.id} className="flex h-[33px] items-center gap-3">
-              <span className="flex-1 text-[12.5px] text-t1">{rule.category}</span>
-              <span className="tnum font-mono text-[11.5px] text-t3">
-                floor {(rule.marginFloorPct * 100).toFixed(1)}%
+              <span className="flex-1 truncate text-[12.5px] text-t1">{rule.category}</span>
+              <span className="tnum w-[90px] text-right font-mono text-[11.5px] text-t3">
+                {(rule.marginFloorPct * 100).toFixed(1)}%
               </span>
-              <span className="tnum font-mono text-[11.5px] text-t3">
-                max ±{(rule.maxDeltaPct * 100).toFixed(0)}%
+              <span className="tnum w-[76px] text-right font-mono text-[11.5px] text-t3">
+                ±{(rule.maxDeltaPct * 100).toFixed(0)}%
               </span>
               <button
                 type="button"
@@ -109,7 +119,8 @@ export function CategoryRulesSection() {
               </button>
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       )}
 
       <form

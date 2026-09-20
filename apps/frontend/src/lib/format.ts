@@ -48,10 +48,15 @@ export function confidenceBand(value: number): ConfidenceBand {
 const RELATIVE = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
 /** Relative for recency, because "3 hours ago" is what an analyst triaging a
- *  queue actually wants. The absolute value goes in a title attribute. */
+ *  queue actually wants. The absolute value goes in a title attribute.
+ *
+ *  Future instants are clamped to the present. Everything this renders has
+ *  already happened, so "in 54 minutes" on an append-only audit trail is
+ *  always a display bug, whatever the row says. The seed that produced those
+ *  rows is fixed separately; this guarantee should not depend on it. */
 export function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
-  const seconds = Math.round((then - Date.now()) / 1000);
+  const seconds = Math.min(0, Math.round((then - Date.now()) / 1000));
   const abs = Math.abs(seconds);
 
   if (abs < 60) return RELATIVE.format(Math.round(seconds), "second");

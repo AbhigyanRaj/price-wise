@@ -26,23 +26,30 @@ export function GapCell({ ours, market }: { ours: number; market: number | null 
   const pinned = Math.abs(gap) > CLAMP;
 
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-2.5">
       <span
         aria-hidden="true"
-        className="relative inline-block h-[10px] w-14 shrink-0"
+        // Widened from 56px and the bar thickened from 4px to 6px. At the old
+        // size a typical +2% gap drew a two-pixel stub that was invisible at
+        // arm's length, which defeated the point: this column exists so the
+        // whole catalogue's competitive position can be read by scanning one
+        // column, and it could not be.
+        className="relative inline-block h-[12px] w-[72px] shrink-0"
         title={`${above ? "Above" : "Below"} the ${market.toFixed(2)} market median`}
       >
         {/* The tick is the zero line. Without it a bar means nothing. */}
         <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-line3" />
         <span
           className={cn(
-            "absolute top-1/2 h-1 -translate-y-1/2 rounded-[1px]",
+            "absolute top-1/2 h-1.5 -translate-y-1/2 rounded-[1px]",
             above ? "left-1/2 bg-pos" : "right-1/2 bg-neg",
             // A pinned bar reaches the edge; squaring that end signals "at
             // least this much" rather than "exactly this much".
             pinned && (above ? "rounded-r-none" : "rounded-l-none"),
           )}
-          style={{ width: `${magnitude * 50}%` }}
+          // A floor of 3% of the track. Below it a real gap rounds to nothing
+        // drawn at all, and "small" and "none" must not look identical.
+        style={{ width: `${Math.max(magnitude * 50, 3)}%` }}
         />
       </span>
       <span

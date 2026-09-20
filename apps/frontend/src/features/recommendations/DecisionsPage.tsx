@@ -201,7 +201,11 @@ export function DecisionsPage() {
   const busy = approve.isPending || reject.isPending || modify.isPending;
 
   return (
-    <div className="flex h-full lg:h-[calc(100dvh-46px)]">
+    // h-full now that main is a real scroll container with a definite height.
+    // lg:h-[calc(100dvh-46px)] hardcoded the top bar's height a second time,
+    // so the two panes disagreed with the shell by exactly 46px whenever
+    // either changed.
+    <div className="flex h-full">
       <DecisionQueue
         className={recommendationId ? "hidden lg:flex" : undefined}
         items={items}

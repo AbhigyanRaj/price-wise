@@ -1,9 +1,10 @@
-"use client"
+import * as React from "react";
+import { Separator as SeparatorPrimitive } from "radix-ui";
+import { cn } from "@/lib/cn";
 
-import * as React from "react"
-import { cn } from "cn"
-import { Separator as SeparatorPrimitive } from "radix-ui"
-
+/** `bg-border` resolved to the CONTROL border token, which is heavier than a
+ *  rule between content should be. `--line` is the hairline this design uses
+ *  everywhere else. */
 function Separator({
   className,
   orientation = "horizontal",
@@ -16,12 +17,14 @@ function Separator({
       decorative={decorative}
       orientation={orientation}
       className={cn(
-        "shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px",
-        className
+        "shrink-0 bg-line",
+        "data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full",
+        "data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px",
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Separator }
+export { Separator };

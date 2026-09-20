@@ -35,7 +35,7 @@
   --inset: #101014;
   --input: #0c0c10;
   --hover: #191920;
-  --sel: #1e1d28;
+  --sel: #16202e;
   --ctl: #1a1a21;
   --ctl-hover: #212028;
 
@@ -56,19 +56,36 @@
   --t5: #585564;
   --t6: #3e3c48;
 
-  /* accent */
-  --acc: #6f62e6;
-  --acc-hover: #7f73f2;
-  --acc2: #8f84f0;
-  --acc-t: #a79cff;
-  --acc-t2: #c4bcff;
-  --acc-t3: #d5cfff;
-  --focus: #5f55cf;
+  /* Accent.
+
+     Blue, not the violet this shipped with. Violet is the default costume of
+     every AI product of the last few years, and this is a pricing tool: it
+     should read as financial software. Blue also sits far from --pos and
+     --neg on the wheel, so the brand colour can never be mistaken for a price
+     moving, which a teal or a green accent would risk.
+
+     It is spent narrowly: the focus ring, the active nav bar, the pending
+     pill and the selected row. Primary buttons are inverted ink, matching the
+     sign-in screen, so the accent never has to carry prominence. */
+  /* Darkened from #3f7fe0, which reached only 3.94:1 against white and so
+     failed the button-label pair. The accent is a FILL as well as a line, so
+     it is bounded at both ends: light enough to clear 3:1 on --bg as a UI
+     component (it lands at 3.98), dark enough to carry white label text at
+     4.5 (it lands at 4.88). Asserted in design/contrast.test.ts.
+     --acc2 is the lighter step used wherever the accent is TEXT, which owes
+     the full 4.5:1 and cannot be the same value. */
+  --acc: #2f6fd0;
+  --acc-hover: #3f7fe0;
+  --acc2: #5b96ee;
+  --acc-t: #8db8f5;
+  --acc-t2: #b4d2fa;
+  --acc-t3: #cfe2fc;
+  --focus: #5b96ee;
   --on-acc: #ffffff;
-  --acc-a: rgba(120, 107, 240, 0.13);
-  --acc-a2: rgba(120, 107, 240, 0.22);
-  --acc-border: rgba(120, 107, 240, 0.36);
-  --acc-band: rgba(120, 107, 240, 0.45);
+  --acc-a: rgba(63, 127, 224, 0.13);
+  --acc-a2: rgba(63, 127, 224, 0.22);
+  --acc-border: rgba(63, 127, 224, 0.36);
+  --acc-band: rgba(63, 127, 224, 0.45);
 
   /* semantic */
   --pos: #4cc38a;
@@ -95,7 +112,7 @@
 
   /* Two very wide radials painted on the app background. Large flat surfaces
      read as plastic without them. */
-  --env: radial-gradient(1300px 720px at 16% -14%, rgba(120, 107, 240, 0.1), transparent 62%),
+  --env: radial-gradient(1300px 720px at 16% -14%, rgba(63, 127, 224, 0.1), transparent 62%),
     radial-gradient(1000px 560px at 98% -6%, rgba(255, 255, 255, 0.035), transparent 60%);
 }
 
@@ -107,7 +124,7 @@
   --inset: #fbfaf8;
   --input: #ffffff;
   --hover: #f1efea;
-  --sel: #efecfb;
+  --sel: #eaf1fb;
   --ctl: #ffffff;
   --ctl-hover: #f4f2ee;
 
@@ -126,18 +143,20 @@
   --t5: #a4a0ab;
   --t6: #c6c2cb;
 
-  --acc: #5a4bd4;
-  --acc-hover: #4e40c4;
-  --acc2: #6355db;
-  --acc-t: #5343c9;
-  --acc-t2: #4635b8;
-  --acc-t3: #8478e8;
-  --focus: #a79cff;
+  /* Darker than the dark theme's blue, as every accent must be on paper: the
+     same hue that reads clearly on #0d0d10 fails contrast on #f7f6f3. */
+  --acc: #1f5fc4;
+  --acc-hover: #1a4fa8;
+  --acc2: #2a6bd4;
+  --acc-t: #1d58b5;
+  --acc-t2: #17489a;
+  --acc-t3: #6597e0;
+  --focus: #5490e8;
   --on-acc: #ffffff;
-  --acc-a: rgba(90, 75, 212, 0.07);
-  --acc-a2: rgba(90, 75, 212, 0.13);
-  --acc-border: rgba(90, 75, 212, 0.26);
-  --acc-band: rgba(90, 75, 212, 0.34);
+  --acc-a: rgba(31, 95, 196, 0.07);
+  --acc-a2: rgba(31, 95, 196, 0.13);
+  --acc-border: rgba(31, 95, 196, 0.26);
+  --acc-band: rgba(31, 95, 196, 0.34);
 
   /* Darkened from the handoff's #2c8c5f, which reaches only 3.87:1 on --bg.
      It is used for positive delta text at 12-14px, so it owes 4.5:1 under the
@@ -165,7 +184,7 @@
   --sh-row: none;
   --noise-opacity: 0.05;
 
-  --env: radial-gradient(1300px 720px at 16% -14%, rgba(90, 75, 212, 0.055), transparent 62%),
+  --env: radial-gradient(1300px 720px at 16% -14%, rgba(31, 95, 196, 0.055), transparent 62%),
     radial-gradient(1000px 560px at 98% -6%, rgba(255, 255, 255, 0.9), transparent 60%);
 }
 
@@ -435,9 +454,10 @@
   }
 }
 
-/* The auth column's entrance. A longer travel than pwIn because these
-   elements are larger and further apart, so 6px reads as a twitch here. */
-@keyframes pwAuthIn {
+/* The app-wide enter for a block of content: a section, a rail metric, a
+   column of a form. A longer travel than pwIn because these elements are
+   larger and further apart, so 6px reads as a twitch on them. */
+@keyframes pwRise {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -486,6 +506,27 @@
   .pw-breathe {
     animation: pwBreathe 3.4s ease-in-out infinite;
   }
+
+  /* The standard enter. Set --pw-delay on the element to stagger a group;
+     the delay is a custom property rather than a set of nth-child rules so a
+     caller can read the order straight off the JSX. */
+  .pw-rise {
+    animation: pwRise 420ms var(--ease-spatial) both;
+    animation-delay: var(--pw-delay, 0ms);
+  }
+
+  /* Staggers direct children without needing a delay at every call site. Capped
+     at six, because past that the last row waits long enough to read as lag
+     rather than as sequence. */
+  .pw-stagger > * {
+    animation: pwRise 420ms var(--ease-spatial) both;
+  }
+  .pw-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .pw-stagger > *:nth-child(2) { animation-delay: 45ms; }
+  .pw-stagger > *:nth-child(3) { animation-delay: 90ms; }
+  .pw-stagger > *:nth-child(4) { animation-delay: 135ms; }
+  .pw-stagger > *:nth-child(5) { animation-delay: 180ms; }
+  .pw-stagger > *:nth-child(n + 6) { animation-delay: 215ms; }
 
   /* A shimmer reads as "processing". A spinner reads as "waiting", which is a
      less honest thing to say while work is actually happening. */

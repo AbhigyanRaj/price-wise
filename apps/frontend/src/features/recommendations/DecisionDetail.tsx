@@ -97,11 +97,11 @@ export function DecisionDetail({
             <p className="eyebrow mb-1.5">Confidence</p>
             <p className="mb-1.5 flex items-baseline gap-2">
               <span className="text-[14px] font-medium text-t1">
-                {rec.confidenceScore >= 0.85
-                  ? "High confidence"
-                  : rec.confidenceScore >= 0.78
-                    ? "Moderate confidence"
-                    : "Needs review"}
+                {rec.confidenceScore >= threshold
+                  ? "Clears your threshold"
+                  : rec.confidenceScore >= threshold - 0.1
+                    ? "Just below your threshold"
+                    : "Well below your threshold"}
               </span>
               <ConfidenceBadge value={rec.confidenceScore} />
             </p>
@@ -369,7 +369,13 @@ function AgentRow({ run, weight }: { run: AgentRunDto; weight: number | null }) 
 }
 
 /** Ten segments. A continuous bar invites reading precision that a confidence
- *  score does not have; discrete steps are honest about its granularity. */
+ *  score does not have; discrete steps are honest about its granularity.
+ *
+ *  Banded against the ORGANIZATION'S threshold rather than against fixed
+ *  0.85/0.78 cut-offs. With a threshold of 0.80, a 0.76 recommendation is
+ *  marginal, and the fixed scale painted all ten segments red, which said
+ *  "this is dangerous" about something that merely needs a human to look at
+ *  it. Red now means genuinely far below the line the org actually set. */
 function ConfidenceScale({ value, threshold }: { value: number; threshold: number }) {
   const filled = Math.round(value * 10);
   const thresholdSegment = Math.round(threshold * 10);
@@ -380,11 +386,11 @@ function ConfidenceScale({ value, threshold }: { value: number; threshold: numbe
         <span
           key={i}
           className={cn(
-            "h-1 flex-1 rounded-full",
+            "h-1 flex-1 rounded-full transition-colors duration-200",
             i < filled
-              ? value >= 0.85
+              ? value >= threshold
                 ? "bg-pos"
-                : value >= 0.78
+                : value >= threshold - 0.1
                   ? "bg-amber"
                   : "bg-neg"
               : "bg-line",

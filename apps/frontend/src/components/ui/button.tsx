@@ -1,41 +1,71 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
-import { Slot } from "radix-ui"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { Slot } from "radix-ui";
+import { cn } from "@/lib/cn";
 
+/**
+ * Rewritten onto this project's tokens.
+ *
+ * It shipped as stock shadcn asking for `bg-primary`,
+ * `text-primary-foreground`, `bg-accent` and `ring-ring`. None of those are
+ * declared in index.css, and Tailwind v4 only emits a utility for a theme key
+ * that exists, so every one of those class names was a dead string. The
+ * visible symptom was that the primary button had no fill at all: "Save
+ * changes" on Settings and "Sign in" on the login screen rendered as bare
+ * text. Confirmed against the built stylesheet, which contained zero
+ * occurrences of `primary`, `destructive`, `muted` or `secondary`.
+ *
+ * `outline-none` is gone too. index.css declares one focus spec for the whole
+ * app and states that it is never removed; a utility on this component beat
+ * that base rule and quietly stripped the ring from every button.
+ */
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  [
+    "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap",
+    "rounded-md text-[13px] font-medium",
+    // Colour and transform, so the press has physical feedback. 0.97 is
+    // small enough to read as a button depressing rather than as a bounce.
+    "transition-[color,background-color,border-color,transform] duration-[110ms]",
+    "active:scale-[0.97]",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  ].join(" "),
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
-        outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+        // Inverted ink, not the accent, and the same primary the sign-in
+        // screen uses. One accent per screen: it is spent on focus, the
+        // active nav bar and the pending pill, so the primary button earns
+        // its prominence from contrast rather than hue. It also means the
+        // button never competes with a green or red price movement beside it.
+        default: "bg-t0 text-bg hover:opacity-90",
+        // For the rare case where a control must read as the accent itself.
+        accent: "bg-acc text-on-acc hover:bg-acc-hover",
+        // The word carries the meaning, so this stays a quiet surface with
+        // negative text rather than a wall of red.
+        destructive: "border border-neg-border bg-neg-a text-neg hover:bg-neg/15",
+        outline: "border border-border bg-ctl text-t1 hover:border-border-strong hover:bg-ctl-hover",
+        secondary: "bg-ctl text-t1 hover:bg-ctl-hover",
+        ghost: "text-t3 hover:bg-hover hover:text-t1",
+        link: "text-acc-t2 underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
-        "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-8",
-        "icon-lg": "size-10",
+        default: "h-8 px-3 has-[>svg]:px-2.5",
+        xs: "h-6 rounded-sm px-2 text-[11.5px] [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 px-2.5 text-[12.5px] has-[>svg]:px-2",
+        lg: "h-9 px-5",
+        icon: "size-8",
+        "icon-xs": "size-6 rounded-sm [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-7",
+        "icon-lg": "size-9",
       },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 function Button({
   className,
@@ -45,9 +75,9 @@ function Button({
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
+    asChild?: boolean;
   }) {
-  const Comp = asChild ? Slot.Root : "button"
+  const Comp = asChild ? Slot.Root : "button";
 
   return (
     <Comp
@@ -57,7 +87,7 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
-  )
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };

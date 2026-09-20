@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Sparkles, Zap } from "lucide-react";
+import { ArrowLeft, Play, Workflow } from "lucide-react";
 import { api } from "@/lib/api";
 import { money, percent } from "@/lib/format";
 import { DeltaChip, InventoryBadge, MarginCell, Money } from "@/components/data/Metrics";
@@ -84,7 +84,7 @@ export function ProductDetailPage() {
           </select>
 
           <Button size="sm" onClick={handleGenerate} disabled={status === "streaming"}>
-            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            <Play className="h-3.5 w-3.5" aria-hidden="true" />
             {status === "streaming" ? "Running" : "Generate recommendation"}
           </Button>
         </div>
@@ -134,7 +134,7 @@ export function ProductDetailPage() {
         <section>
           {status === "idle" && !product.pendingRecommendation && (
             <div className="rounded-md border border-dashed border-line px-6 py-12 text-center">
-              <Zap className="mx-auto mb-3 h-7 w-7 text-t4" aria-hidden="true" />
+              <Workflow className="mx-auto mb-3 h-7 w-7 text-t4" aria-hidden="true" />
               <p className="text-sm font-medium">No recommendation yet</p>
               <p className="mx-auto mt-1 max-w-xs text-[13px] text-t3">
                 Run the five-agent pipeline to analyse this product against the market, your costs

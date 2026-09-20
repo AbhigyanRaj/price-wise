@@ -8,9 +8,9 @@ import {
   Pencil,
   Plus,
   Search,
-  Sparkles,
   Trash2,
 } from "lucide-react";
+import { Page } from "@/components/layout/Page";
 import { ConfidenceBadge, InventoryBadge, MarginCell, Money } from "@/components/data/Metrics";
 import { GapCell } from "./GapCell";
 import { EmptyFirstRun, EmptyNoMatches, ErrorState } from "@/components/data/States";
@@ -145,17 +145,17 @@ export function CatalogPage() {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <header className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
-        <div>
-          <h1>Catalog</h1>
-          <p className="mt-0.5 text-sm text-t3">
-            Every SKU in your organization, with its current market position.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
+    // Titled Products to match the rail. It read "Catalog" while the nav item
+    // beside it said Products, which is the kind of drift that makes an app
+    // feel assembled rather than designed.
+    <Page
+      title="Products"
+      subtitle="Every SKU in your organization, with its current position against the market."
+      wide
+      actions={
+        <>
           {data && (
-            <span className="tnum text-xs text-t4">
+            <span className="tnum font-mono text-[11px] text-t4">
               {data.pagination.totalCount} products
             </span>
           )}
@@ -167,12 +167,13 @@ export function CatalogPage() {
                 setFormOpen(true);
               }}
             >
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              <Plus aria-hidden="true" />
               Add product
             </Button>
           )}
-        </div>
-      </header>
+        </>
+      }
+    >
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative">
@@ -185,7 +186,7 @@ export function CatalogPage() {
             onChange={(e) => update({ search: e.target.value })}
             placeholder="Search SKU or name"
             aria-label="Search products"
-            className="h-8 w-56 pl-8 text-[13px]"
+            className="w-full pl-8 sm:w-56"
           />
         </div>
 
@@ -210,10 +211,12 @@ export function CatalogPage() {
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 text-[13px]"
-            onClick={() => setFilters(DEFAULT_FILTERS)}
+            onClick={() => {
+              setFilters(DEFAULT_FILTERS);
+              setView("all");
+            }}
           >
-            Clear filters
+            Clear
           </Button>
         )}
       </div>
@@ -250,16 +253,17 @@ export function CatalogPage() {
         })}
       </div>
 
-      <div className="overflow-hidden rounded-md border border-line bg-panel">
+      <div className="overflow-hidden rounded-card border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead>
+          {/* Sticky, so the column meanings survive a long catalogue. */}
+          <thead className="sticky top-0 z-10 bg-chrome">
             <tr className="border-b border-line">
               {COLUMNS.map((column) => (
                 <th
                   key={column.key}
                   scope="col"
                   className={cn(
-                    "h-8 px-3 text-xs font-medium text-t4",
+                    "h-8 px-3 font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-t4",
                     // Numeric headers align right with their cells. A
                     // left-aligned header over a right-aligned column is the
                     // commonest reason a data table reads as crooked.
@@ -392,7 +396,7 @@ export function CatalogPage() {
         product={formFor ?? undefined}
       />
       <DeleteProductDialog product={deleting} onClose={() => setDeleting(null)} />
-    </div>
+    </Page>
   );
 }
 
@@ -423,7 +427,9 @@ function ProductRow({
           onOpen();
         }
       }}
-      className="h-9 cursor-pointer border-b border-line transition-colors duration-100 last:border-0 hover:bg-hover"
+      // 33px rows. The handoff calls the density the design, and 36px with a
+      // full-strength divider on every row was neither dense nor calm.
+      className="group h-[33px] cursor-pointer border-b border-line2 transition-colors duration-[110ms] last:border-0 hover:bg-hover"
     >
       <td className="hidden px-3 font-mono text-xs text-t3 md:table-cell">{product.sku}</td>
       <td className="max-w-0 truncate px-3" title={product.name}>
@@ -436,7 +442,7 @@ function ProductRow({
         {competitor ? (
           <Money value={competitor.price} className="text-t3" title={competitor.competitor} />
         ) : (
-          <span className="text-xs text-t6">none</span>
+          <span className="text-[11px] text-t6">no market data</span>
         )}
       </td>
       <td className="px-3">
@@ -450,17 +456,23 @@ function ProductRow({
       </td>
       <td className="hidden px-3 sm:table-cell">
         {product.pendingRecommendation ? (
-          <span className="inline-flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3 text-acc-t2" aria-hidden="true" />
-            <ConfidenceBadge value={product.pendingRecommendation.confidenceScore} />
-          </span>
+          // No icon. The confidence badge already says a recommendation
+          // exists and how strong it is; a glyph beside it was decoration
+          // repeated down twenty rows.
+          <ConfidenceBadge value={product.pendingRecommendation.confidenceScore} />
         ) : (
-          <span className="text-xs text-t4">none</span>
+          // --t6, deliberately almost invisible. Eighteen rows reading "none"
+          // at full strength pulled the eye to every row that needed nothing,
+          // which is exactly backwards.
+          <span className="text-[11px] text-t6">at target</span>
         )}
       </td>
       <td className="hidden px-3 text-right sm:table-cell">
         {isAdmin && (
-          <span className="inline-flex items-center gap-0.5">
+          // Revealed on hover or keyboard focus. Twenty rows of pencil and bin
+          // icons competed with the data they sat beside; focus-within keeps
+          // them reachable without a mouse.
+          <span className="inline-flex items-center gap-0.5 opacity-0 transition-opacity duration-[110ms] group-hover:opacity-100 group-focus-within:opacity-100">
             <button
               type="button"
               aria-label={`Edit ${product.sku}`}
@@ -528,7 +540,7 @@ function FilterSelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={label}
-      className="h-8 rounded-md border border-line bg-panel px-2 text-[13px] text-t1 transition-colors duration-100 hover:border-line3"
+      className="h-8 rounded-md border border-border bg-input px-2 text-[13px] text-t1 transition-colors duration-[110ms] hover:border-border-strong"
     >
       <option value="">{label}: all</option>
       {options.map((option) => (

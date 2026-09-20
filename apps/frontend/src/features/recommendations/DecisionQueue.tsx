@@ -58,15 +58,17 @@ export function DecisionQueue({
       )}
     >
       <div className="border-b border-line px-4 py-3">
-        <div className="mb-2.5 flex items-baseline justify-between gap-2">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
           <h1 className="text-[15px] font-semibold tracking-[-0.01em] text-t0">Decisions</h1>
-          <span className="tnum shrink-0 font-mono text-[11px] text-t4">
-            {items.length} {filter === "PENDING" ? "pending" : "shown"}
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="tnum font-mono text-[11px] text-t4">
+              {items.length} {filter === "PENDING" ? "pending" : "shown"}
+            </span>
+            {/* Beside the count rather than on a row of its own. Export is a
+                rare action and it was taking a full band of the queue's
+                header, above the filter that people actually use. */}
+            <ExportButton status={filter} />
           </span>
-        </div>
-
-        <div className="mb-2.5">
-          <ExportButton status={filter} />
         </div>
 
         <div

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { ApiError } from "@/lib/api";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -57,35 +58,41 @@ export function ThresholdControl({
       </div>
 
       {recent.length > 0 && (
-        <div className="mb-2 flex h-14 items-end gap-[2px]" aria-hidden="true">
-          {[...recent]
-            .sort((a, b) => a.confidenceScore - b.confidenceScore)
-            .map((rec) => (
-              <span
-                key={rec.id}
-                title={`${rec.product?.sku} at ${rec.confidenceScore.toFixed(2)}`}
-                className={cn(
-                  "w-[3px] flex-1 rounded-[1px] transition-colors duration-[110ms]",
-                  rec.confidenceScore >= value ? "bg-acc" : "bg-line",
-                )}
-                // Scaled from 0.5, where the slider starts. From zero every bar
-                // would be tall and the distribution would be invisible.
-                style={{ height: `${Math.max(6, ((rec.confidenceScore - 0.5) / 0.5) * 100)}%` }}
-              />
-            ))}
+        // Each recommendation is one 3px tick POSITIONED BY ITS CONFIDENCE,
+        // not a bar in a row of equal columns. The previous version gave every
+        // bar `flex-1`, so with thirteen recommendations they rendered as wide
+        // blocks that read as a bar chart of thirteen categories. It is a
+        // distribution: the horizontal axis is confidence, it shares that axis
+        // with the slider directly beneath, and dragging the handle recolours
+        // the ticks it passes.
+        <div className="relative mb-1 h-14" aria-hidden="true">
+          {recent.map((rec) => (
+            <span
+              key={rec.id}
+              title={`${rec.product?.sku} at ${rec.confidenceScore.toFixed(2)}`}
+              className={cn(
+                "absolute bottom-0 w-[3px] -translate-x-1/2 rounded-[1px] transition-colors duration-[110ms]",
+                rec.confidenceScore >= value ? "bg-acc" : "bg-line3",
+              )}
+              style={{
+                // Clamped into the track, so a 0.50 and a 1.00 both sit fully
+                // inside the box rather than half outside it.
+                left: `${Math.min(99, Math.max(1, ((rec.confidenceScore - 0.5) / 0.5) * 100))}%`,
+                height: `${Math.max(14, ((rec.confidenceScore - 0.5) / 0.5) * 100)}%`,
+              }}
+            />
+          ))}
         </div>
       )}
 
-      <input
-        type="range"
+      <Slider
         min={0.5}
         max={1}
         step={0.01}
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label="Confidence threshold"
-        aria-valuetext={`${value.toFixed(2)}, ${wouldExecute.length} of ${recent.length} would execute automatically`}
-        className="w-full accent-[var(--acc)]"
+        onChange={onChange}
+        label="Confidence threshold"
+        valueText={`${value.toFixed(2)}, ${wouldExecute.length} of ${recent.length} would execute automatically`}
       />
 
       <div className="mt-1 flex justify-between font-mono text-[10px] text-t5">
@@ -145,16 +152,14 @@ export function DeltaControl({
         <span className="tnum font-mono text-[19px] text-t0">±{Math.round(value * 100)}%</span>
       </div>
 
-      <input
-        type="range"
+      <Slider
         min={0.05}
         max={0.4}
         step={0.01}
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label="Maximum price change"
-        aria-valuetext={`plus or minus ${Math.round(value * 100)} percent`}
-        className="w-full accent-[var(--acc)]"
+        onChange={onChange}
+        label="Maximum price change"
+        valueText={`plus or minus ${Math.round(value * 100)} percent`}
       />
 
       {sample && (
