@@ -67,12 +67,7 @@ async function main() {
       org.confidenceThreshold,
     );
 
-    for (const rec of recommendations) {
-      await seedRepo.createRecommendationWithRuns(organization.id, rec);
-    }
-    totalRecommendations += recommendations.length;
-
-    await seedRepo.createAuditEntries(organization.id, [
+    const auditEntries: Parameters<typeof seedRepo.createAuditEntries>[1] = [
       {
         userId: admin.id,
         action: "ORG_CREATED",
@@ -87,7 +82,54 @@ async function main() {
         entityId: analyst.id,
         createdAt: new Date(Date.now() - 6 * 86_400_000),
       },
-    ]);
+    ];
+
+    for (const rec of recommendations) {
+      const { id } = await seedRepo.createRecommendationWithRuns(organization.id, rec);
+
+      // Every resolved recommendation gets the audit row its resolution would
+      // have written. Without this the trail held two rows against eight
+      // resolutions, so the Activity screen was near-empty on first login and
+      // its search and filters looked pointless.
+      //
+      // The action names are the ones the live services emit, so a seeded row
+      // and a real one are indistinguishable, and a null actor marks the
+      // auto-executed ones exactly as the running system does.
+      if (rec.status === "PENDING") continue;
+
+      const resolvedAt = new Date(rec.createdAt.getTime() + 3_600_000);
+      const isSystem = rec.status === "AUTO_EXECUTED";
+
+      auditEntries.push({
+        userId: isSystem ? null : analyst.id,
+        action:
+          rec.status === "AUTO_EXECUTED"
+            ? "PRICE_AUTO_EXECUTED"
+            : rec.status === "REJECTED"
+              ? "RECOMMENDATION_REJECTED"
+              : rec.status === "MODIFIED"
+                ? "RECOMMENDATION_MODIFIED"
+                : "RECOMMENDATION_APPROVED",
+        entityType: "PricingRecommendation",
+        entityId: id,
+        createdAt: resolvedAt,
+      });
+
+      // An approval or a modification also moved a price, which is a second,
+      // separate event against the product.
+      if (rec.status === "APPROVED" || rec.status === "MODIFIED" || isSystem) {
+        auditEntries.push({
+          userId: isSystem ? null : analyst.id,
+          action: isSystem ? "PRICE_AUTO_EXECUTED" : "PRICE_APPROVED_AND_EXECUTED",
+          entityType: "Product",
+          entityId: rec.productId,
+          createdAt: new Date(resolvedAt.getTime() + 1000),
+        });
+      }
+    }
+    totalRecommendations += recommendations.length;
+
+    await seedRepo.createAuditEntries(organization.id, auditEntries);
 
     console.log(`  ${created.length} products, ${recommendations.length} recommendations`);
   }

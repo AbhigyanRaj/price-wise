@@ -4,6 +4,7 @@ import { ArrowRight, Boxes, ClipboardList, Gauge, Zap } from "lucide-react";
 import { api, queryString } from "@/lib/api";
 import { ConfidenceBadge, DeltaChip, Money } from "@/components/data/Metrics";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/data/States";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/useAuth";
 import { relativeTime } from "@/lib/format";
@@ -21,7 +22,7 @@ export function DashboardPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  const { data: pending, isPending: loadingQueue } = useQuery({
+  const { data: pending, isPending: loadingQueue, isError, error, refetch } = useQuery({
     queryKey: ["recommendations", { status: "PENDING", limit: 100 }],
     queryFn: ({ signal }) =>
       api.paged<RecommendationDto>(
@@ -57,6 +58,22 @@ export function DashboardPage() {
   const topPending = [...pendingItems]
     .sort((a, b) => b.confidenceScore - a.confidenceScore)
     .slice(0, 5);
+
+  // The landing screen had no error branch at all, so an API that was down
+  // rendered four empty stat cards and two empty lists: indistinguishable from
+  // a brand-new organization with nothing in it. The queue query is the
+  // representative one; if it failed the others almost certainly did too.
+  if (isError) {
+    return (
+      <div className="px-[34px] py-7">
+        <ErrorState
+          title="Could not load your overview"
+          description={error instanceof Error ? error.message : "The API did not respond."}
+          onRetry={() => void refetch()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="px-[34px] py-7">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AGENT_DISPLAY_NAMES } from "@pricewise/shared";
 import { Check, ChevronDown, Minus, Plus } from "lucide-react";
 import { ConfidenceBadge, DeltaChip, Money, StatusBadge } from "@/components/data/Metrics";
-import { ToolCallList } from "@/components/data/ToolCallList";
+import { SourcesSummary, ToolCallList } from "@/components/data/ToolCallList";
 import { ConfidenceWaterfall } from "@/components/charts/ConfidenceWaterfall";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +143,16 @@ export function DecisionDetail({
         {/* ---- Rationale ------------------------------------------------ */}
         <section className="mb-7">
           <h3 className="mb-2">Why this price</h3>
-          <p className="max-w-[68ch] text-[13px] leading-[1.6] text-t1">{rec.rationale}</p>
+          <p className="mb-3 max-w-[68ch] text-[13px] leading-[1.6] text-t1">{rec.rationale}</p>
+
+          {/* Attribution for the recommendation as a whole. Without it the only
+              provenance was on individual tool calls, two expansions deep,
+              which is not what "every insight shows where its data came from"
+              means. */}
+          <div className="max-w-[68ch] rounded-inset border border-line bg-inset px-3.5 py-3">
+            <p className="eyebrow mb-2">Drawn from</p>
+            <SourcesSummary runs={rec.agentRuns} />
+          </div>
         </section>
 
         {/* ---- Agent reasoning ------------------------------------------ */}
