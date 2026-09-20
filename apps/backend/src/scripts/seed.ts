@@ -97,7 +97,12 @@ async function main() {
       // auto-executed ones exactly as the running system does.
       if (rec.status === "PENDING") continue;
 
-      const resolvedAt = new Date(rec.createdAt.getTime() + 3_600_000);
+      // Clamped to now. seedRecommendations picks createdAt from daysAgo(0..6),
+      // so on a zero roll the hour offset pushed the resolution into the
+      // future and the audit trail rendered "in 54 minutes" for something that
+      // had already happened. The offset is what makes the trail readable; it
+      // must not move a past event forward past the present.
+      const resolvedAt = new Date(Math.min(rec.createdAt.getTime() + 3_600_000, Date.now()));
       const isSystem = rec.status === "AUTO_EXECUTED";
 
       auditEntries.push({

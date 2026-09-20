@@ -41,3 +41,6 @@ test-results/
 
 # Dev-only Groq response cache
 .cache/
+
+# Local convenience file. Seeded throwaway credentials, but no reason to ship it.
+CREDENTIALS.txt

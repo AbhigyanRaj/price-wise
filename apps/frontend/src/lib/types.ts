@@ -158,6 +158,9 @@ export interface RecommendationDetailDto extends RecommendationDto {
 export interface AuditLogDto {
   id: string;
   userId: string | null;
+  /** Resolved from the org's members. Null when the system acted, or when the
+   *  person who acted is no longer a member. */
+  userName: string | null;
   action: string;
   entityType: string;
   entityId: string;

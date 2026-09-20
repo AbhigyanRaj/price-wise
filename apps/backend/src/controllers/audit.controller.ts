@@ -15,6 +15,7 @@ export async function list(req: Request, res: Response, next: NextFunction) {
         items.map((e) => ({
           id: e.id,
           userId: e.userId,
+          userName: e.userName,
           action: e.action,
           entityType: e.entityType,
           entityId: e.entityId,

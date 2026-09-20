@@ -7,9 +7,10 @@ export const AuditQuerySchema = z.object({
   action: z.string().max(64).optional(),
   /** Free text across action, entityType and entityId.
    *
-   *  Deliberately NOT across the actor's name: AuditLog has no relation to
-   *  User, only to Organization, so matching a person would need a schema
-   *  change. Nor across beforeValue/afterValue: Prisma cannot do a whole
+   *  Deliberately NOT across the actor's name: the name is resolved after the
+   *  page is read, from the org's members, so it is not a column the database
+   *  can filter on. Filter by userId instead. Nor across
+   *  beforeValue/afterValue: Prisma cannot do a whole
    *  document contains on a Json column without raw SQL. The UI says so in
    *  the placeholder rather than overclaiming. */
   search: z.string().trim().max(200).optional(),

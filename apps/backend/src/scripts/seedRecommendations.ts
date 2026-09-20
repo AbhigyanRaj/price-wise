@@ -355,7 +355,10 @@ export function buildRecommendations(
       // AUTO_EXECUTED has a null actor: that is how the audit trail
       // distinguishes a system action from a human one (FR-AUD-8).
       resolvedByUserId: status === "AUTO_EXECUTED" ? null : resolved ? users.analystId : null,
-      resolvedAt: resolved ? new Date(createdAt.getTime() + 3_600_000) : null,
+      // Clamped for the same reason seed.ts clamps its audit rows: createdAt
+      // comes from daysAgo(0..6), so on a zero roll the hour offset lands in
+      // the future and a resolved recommendation claims to resolve later today.
+      resolvedAt: resolved ? new Date(Math.min(createdAt.getTime() + 3_600_000, Date.now())) : null,
       rejectionReason:
         status === "REJECTED"
           ? "Bundle promotion launches Thursday; cutting the standalone price now undermines it."

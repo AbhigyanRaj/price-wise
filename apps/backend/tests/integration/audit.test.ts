@@ -98,4 +98,25 @@ describe("audit trail is append only", () => {
       expect(res.status).toBe(404);
     }
   });
+
+  test("names the actor, and leaves the system unnamed", async () => {
+    const res = await api(server, "GET", "/audit-logs?limit=50", undefined, orgA.adminJar);
+    const body = (await res.json()) as {
+      data: { userId: string | null; userName: string | null }[];
+    };
+
+    expect(body.data.length).toBeGreaterThan(0);
+
+    // "Who approved it" is the first thing an audit trail is asked for, so a
+    // human actor must come back with a name, not just an opaque id.
+    const human = body.data.find((r) => r.userId !== null);
+    expect(human).toBeDefined();
+    expect(typeof human?.userName).toBe("string");
+
+    // A null actor is the system, which must stay unnamed: that is how an
+    // auto-executed price change is told apart from a human approval.
+    for (const row of body.data) {
+      if (row.userId === null) expect(row.userName).toBeNull();
+    }
+  });
 });
