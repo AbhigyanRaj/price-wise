@@ -13,8 +13,10 @@ const ANALYST = { email: "analyst@northwind.test", password: "Pricewise2026!" };
 
 async function signIn(page: Page, who: { email: string; password: string }) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(who.email);
-  await page.getByLabel("Password").fill(who.password);
+  // exact, because the show/hide toggle beside the field is labelled
+  // "Show password" and a substring match resolves to both.
+  await page.getByLabel("Email", { exact: true }).fill(who.email);
+  await page.getByLabel("Password", { exact: true }).fill(who.password);
   await page.getByRole("button", { name: /sign in/i }).click();
   // The rail only exists once authenticated, so this is the honest signal
   // that sign-in actually completed rather than merely returning 200.
@@ -27,7 +29,9 @@ test.describe("the decision journey", () => {
 
     // The organization name is in the top bar permanently. It is what makes
     // the two-tenant story visible without navigating anywhere.
-    await expect(page.getByText("Northwind Retail")).toBeVisible();
+    // Scoped to the banner: the Overview heading is the org name too, and an
+    // unscoped match would be ambiguous rather than wrong.
+    await expect(page.getByRole("banner").getByText("Northwind Retail")).toBeVisible();
 
     await page.getByRole("link", { name: "Decisions" }).click();
     await expect(page).toHaveURL(/\/decisions$/);
@@ -45,12 +49,44 @@ test.describe("the decision journey", () => {
     // Every agent that ran is listed, with the tool calls that produced it.
     await expect(page.getByText(/market intelligence/i)).toBeVisible();
 
-    await page.getByRole("button", { name: /^approve$/i }).click();
+    // Some seeded recommendations are deliberately blocked by a business rule,
+    // which is its own valid outcome but is not this journey. Walk the queue
+    // until one is actually approvable, which is what an analyst does too.
+    //
+    // Undo and the alert are each absent until their outcome happens, so
+    // polling for whichever appears distinguishes the two without racing.
+    const undo = page.getByRole("button", { name: /^undo$/i });
+    const alert = page.getByRole("alert");
 
-    // Resolving takes it out of the pending queue.
-    await expect(page.getByText(/resolved|cannot be actioned again/i)).toBeVisible({
-      timeout: 15_000,
-    });
+    async function outcome() {
+      if ((await undo.count()) > 0) return "approved";
+      if ((await alert.count()) > 0) return "blocked";
+      return "pending";
+    }
+
+    let approved = false;
+
+    for (let attempt = 0; attempt < 5 && !approved; attempt++) {
+      const before = page.url();
+      await page.getByRole("button", { name: /^approve$/i }).click();
+      await expect.poll(outcome, { timeout: 15_000 }).not.toBe("pending");
+
+      if ((await outcome()) === "approved") {
+        approved = true;
+        // Approving advances to the next decision rather than emptying the
+        // pane: the analyst's job is a sequence.
+        await expect(page).not.toHaveURL(before);
+      } else {
+        // Blocked. The refusal has to name a reason, not just say it failed.
+        await expect(alert).toContainText(/rule|margin|floor|cost|blocked/i);
+        // J moves to the next decision and clears the error on the way.
+        await page.keyboard.press("j");
+        await expect(page).not.toHaveURL(before);
+        await expect(alert).toHaveCount(0);
+      }
+    }
+
+    expect(approved, "no pending recommendation could be approved").toBe(true);
   });
 
   test("the command palette opens on the keyboard and navigates", async ({ page }) => {
@@ -71,9 +107,15 @@ test.describe("the decision journey", () => {
 
     // And typing the URL lands on a refusal rather than a broken screen.
     await page.goto("/settings");
-    await expect(page.getByText(/only an admin|not allowed|forbidden/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /not available to your role/i })).toBeVisible();
+    // The refusal is the whole screen, not a banner above a usable form.
+    await expect(page.getByRole("button", { name: /save/i })).toHaveCount(0);
 
-    await page.goto("/login");
+    // Sign out first: an authenticated user asking for /login is redirected
+    // home, so going there without signing out would never show the form.
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+
     await signIn(page, ADMIN);
     await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
   });

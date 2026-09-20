@@ -63,7 +63,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       {/* Polite: a confirmation should not interrupt whatever the user is
           reading next. The queue moves on without them. */}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-0 z-50">
+      <div
+        role="status"
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-50"
+      >
         {toast && (
           <div className="flex justify-center pb-[26px]">
             <div
