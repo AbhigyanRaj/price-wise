@@ -48,7 +48,7 @@ export function ProductDetailPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <Link
         to="/products"
         className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-t3 transition-colors duration-100 hover:text-t1"

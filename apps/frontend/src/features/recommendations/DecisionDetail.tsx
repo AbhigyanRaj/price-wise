@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { AGENT_DISPLAY_NAMES } from "@pricewise/shared";
-import { Check, ChevronDown, Minus, Plus } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, Minus, Plus } from "lucide-react";
 import { ConfidenceBadge, DeltaChip, Money, StatusBadge } from "@/components/data/Metrics";
 import { SourcesSummary, ToolCallList } from "@/components/data/ToolCallList";
 import { ConfidenceWaterfall } from "@/components/charts/ConfidenceWaterfall";
@@ -54,8 +55,19 @@ export function DecisionDetail({
     .filter(Boolean);
 
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[920px] px-[34px] pb-[120px] pt-7">
+    <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-[920px] px-4 pb-[160px] pt-5 md:px-[34px] md:pb-[120px] md:pt-7">
+        {/* Below md the queue and the detail are separate screens, so this is
+            the "up" affordance. Browser Back does the same thing, but a
+            navigation the app caused needs a visible way out. */}
+        <Link
+          to="/decisions"
+          className="-ml-1 mb-3 inline-flex h-8 items-center gap-1 rounded-md pl-1 pr-2 text-[12px] text-t3 transition-colors duration-[110ms] hover:text-t1 lg:hidden"
+        >
+          <ChevronLeft size={14} strokeWidth={1.5} aria-hidden="true" />
+          All decisions
+        </Link>
+
         <p className="mb-2 flex flex-wrap items-center gap-2 font-mono text-[11px] text-t4">
           <span>{rec.product?.sku}</span>
           <span aria-hidden="true">·</span>
@@ -197,7 +209,7 @@ export function DecisionDetail({
       {isPending && (
         <div className="sticky bottom-0 border-t border-line3 bg-[var(--bar-bg)] backdrop-blur-[14px]">
           {modifying && (
-            <div className="flex items-center gap-2.5 border-b border-line px-[34px] py-2.5">
+            <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-2.5 md:px-[34px]">
               <div className="flex items-center gap-1">
                 <Button
                   size="sm"
@@ -227,7 +239,7 @@ export function DecisionDetail({
                 </Button>
               </div>
 
-              <p className="flex-1 text-[11.5px] text-t4">
+              <p className="order-last w-full text-[11.5px] text-t4 md:order-none md:w-auto md:flex-1">
                 {money(Number(price))} is{" "}
                 {(((Number(price) - rec.currentPriceAtTime) / rec.currentPriceAtTime) * 100).toFixed(1)}%
                 against the current price. Checked against the same margin floor as the AI.
@@ -242,21 +254,36 @@ export function DecisionDetail({
             </div>
           )}
 
-          <div className="flex h-14 items-center gap-2 px-[34px]">
-            <Button size="sm" onClick={onApprove} disabled={busy}>
-              Approve <kbd className="keycap ml-1.5">A</kbd>
+          <div className="flex h-14 items-center gap-2 px-4 md:px-[34px]">
+            <Button size="sm" onClick={onApprove} disabled={busy} aria-keyshortcuts="a">
+              Approve{" "}
+              <kbd aria-hidden="true" className="keycap ml-1.5 hidden md:inline-block">
+                A
+              </kbd>
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setModifying((v) => !v)}>
-              Modify <kbd className="keycap ml-1.5">M</kbd>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setModifying((v) => !v)}
+              aria-keyshortcuts="m"
+            >
+              Modify{" "}
+              <kbd aria-hidden="true" className="keycap ml-1.5 hidden md:inline-block">
+                M
+              </kbd>
             </Button>
             <Button
               size="sm"
               variant="ghost"
               onClick={onReject}
               disabled={busy}
+              aria-keyshortcuts="r"
               className="ml-auto hover:border-neg-border hover:text-neg"
             >
-              Reject <kbd className="keycap ml-1.5">R</kbd>
+              Reject{" "}
+              <kbd aria-hidden="true" className="keycap ml-1.5 hidden md:inline-block">
+                R
+              </kbd>
             </Button>
           </div>
         </div>

@@ -26,22 +26,55 @@ import type { ProductDto } from "@/lib/types";
 
 type SortableColumn = CatalogFilters["sortBy"];
 
+/**
+ * Which columns survive a narrow viewport.
+ *
+ * Always visible: Product, Price and Gap. Gap is the column this screen exists
+ * for, because it encodes the market comparison that Market and Inventory only
+ * provide context for. SKU is an identifier rather than a decision input and
+ * the name sits right beside it; Margin risk stays reachable through its view
+ * tab. Actions are admin-only and return at 640px.
+ *
+ * Column hiding rather than horizontal scroll: a table that scrolls sideways
+ * inside a page is the most broken-feeling mobile pattern there is, and it
+ * would push Gap off the default scroll position. The previous behaviour was
+ * worse than either, because the wrapper was overflow-hidden and the columns
+ * were simply CLIPPED with no way to reach them.
+ *
+ * SkeletonRows indexes COLUMNS, so these classes apply to the loading state
+ * too; otherwise the table jumps when data lands.
+ */
 const COLUMNS: {
   key: string;
   label: string;
   numeric?: boolean;
   sortBy?: SortableColumn;
   width: string;
+  /** Kept separate from width so SkeletonRows can apply the same visibility. */
+  hide?: string;
 }[] = [
-  { key: "sku", label: "SKU", width: "w-36" },
+  { key: "sku", label: "SKU", width: "w-36", hide: "hidden md:table-cell" },
   { key: "name", label: "Product", sortBy: "name", width: "" },
   { key: "price", label: "Price", numeric: true, sortBy: "currentPrice", width: "w-28" },
-  { key: "competitor", label: "Market", numeric: true, width: "w-28" },
+  {
+    key: "competitor",
+    label: "Market",
+    numeric: true,
+    width: "w-28",
+    hide: "hidden lg:table-cell",
+  },
   { key: "gap", label: "Gap", width: "w-36" },
-  { key: "margin", label: "Margin", numeric: true, width: "w-24" },
-  { key: "inventory", label: "Inventory", numeric: true, sortBy: "inventoryLevel", width: "w-36" },
-  { key: "rec", label: "Recommendation", width: "w-36" },
-  { key: "actions", label: "", width: "w-20" },
+  { key: "margin", label: "Margin", numeric: true, width: "w-24", hide: "hidden md:table-cell" },
+  {
+    key: "inventory",
+    label: "Inventory",
+    numeric: true,
+    sortBy: "inventoryLevel",
+    width: "w-36",
+    hide: "hidden lg:table-cell",
+  },
+  { key: "rec", label: "Recommendation", width: "w-36", hide: "hidden sm:table-cell" },
+  { key: "actions", label: "", width: "w-20", hide: "hidden sm:table-cell" },
 ];
 
 /**
@@ -112,8 +145,8 @@ export function CatalogPage() {
   }
 
   return (
-    <div className="p-6">
-      <header className="mb-5 flex items-end justify-between gap-4">
+    <div className="p-4 md:p-6">
+      <header className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
         <div>
           <h1>Catalog</h1>
           <p className="mt-0.5 text-sm text-t3">
@@ -232,6 +265,7 @@ export function CatalogPage() {
                     // commonest reason a data table reads as crooked.
                     column.numeric ? "text-right" : "text-left",
                     column.width,
+                    column.hide,
                   )}
                 >
                   {column.sortBy ? (
@@ -391,14 +425,14 @@ function ProductRow({
       }}
       className="h-9 cursor-pointer border-b border-line transition-colors duration-100 last:border-0 hover:bg-hover"
     >
-      <td className="px-3 font-mono text-xs text-t3">{product.sku}</td>
+      <td className="hidden px-3 font-mono text-xs text-t3 md:table-cell">{product.sku}</td>
       <td className="max-w-0 truncate px-3" title={product.name}>
         {product.name}
       </td>
       <td className="px-3 text-right">
         <Money value={product.currentPrice} />
       </td>
-      <td className="px-3 text-right">
+      <td className="hidden px-3 text-right lg:table-cell">
         {competitor ? (
           <Money value={competitor.price} className="text-t3" title={competitor.competitor} />
         ) : (
@@ -408,13 +442,13 @@ function ProductRow({
       <td className="px-3">
         <GapCell ours={product.currentPrice} market={competitor?.price ?? null} />
       </td>
-      <td className="px-3 text-right">
+      <td className="hidden px-3 text-right md:table-cell">
         <MarginCell margin={product.margin} belowFloor={product.belowFloor} />
       </td>
-      <td className="px-3 text-right">
+      <td className="hidden px-3 text-right lg:table-cell">
         <InventoryBadge status={product.inventoryStatus} level={product.inventoryLevel} />
       </td>
-      <td className="px-3">
+      <td className="hidden px-3 sm:table-cell">
         {product.pendingRecommendation ? (
           <span className="inline-flex items-center gap-1.5">
             <Sparkles className="h-3 w-3 text-acc-t2" aria-hidden="true" />
@@ -424,7 +458,7 @@ function ProductRow({
           <span className="text-xs text-t4">none</span>
         )}
       </td>
-      <td className="px-3 text-right">
+      <td className="hidden px-3 text-right sm:table-cell">
         {isAdmin && (
           <span className="inline-flex items-center gap-0.5">
             <button
@@ -468,7 +502,7 @@ function SkeletonRows() {
       {Array.from({ length: 8 }, (_, row) => (
         <tr key={row} className="h-9 border-b border-line last:border-0">
           {widths.map((width, cell) => (
-            <td key={cell} className="px-3">
+            <td key={cell} className={cn("px-3", COLUMNS[cell]?.hide)}>
               <Skeleton className={cn("h-3", width, COLUMNS[cell]?.numeric && "ml-auto")} />
             </td>
           ))}

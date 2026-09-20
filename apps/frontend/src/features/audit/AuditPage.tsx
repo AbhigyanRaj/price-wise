@@ -29,32 +29,40 @@ export function AuditPage() {
     staleTime: 5 * 60_000,
   });
 
-  const { data, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      queryKey: ["audit", { action, search: settledSearch, from, to }],
-      initialPageParam: undefined as string | undefined,
-      queryFn: ({ pageParam, signal }) =>
-        api.paged<AuditLogDto>(
-          `/audit-logs${queryString({
-            action,
-            search: settledSearch,
-            // <input type="date"> yields YYYY-MM-DD; the API wants an ISO
-            // datetime. Widening to the whole day at both ends is what makes
-            // "from today to today" mean today.
-            from: from ? `${from}T00:00:00.000Z` : "",
-            to: to ? `${to}T23:59:59.999Z` : "",
-            limit: 25,
-            cursor: pageParam,
-          })}`,
-          signal,
-        ),
-      getNextPageParam: (last: Paged<AuditLogDto>) => last.pagination.nextCursor ?? undefined,
-    });
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["audit", { action, search: settledSearch, from, to }],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam, signal }) =>
+      api.paged<AuditLogDto>(
+        `/audit-logs${queryString({
+          action,
+          search: settledSearch,
+          // <input type="date"> yields YYYY-MM-DD; the API wants an ISO
+          // datetime. Widening to the whole day at both ends is what makes
+          // "from today to today" mean today.
+          from: from ? `${from}T00:00:00.000Z` : "",
+          to: to ? `${to}T23:59:59.999Z` : "",
+          limit: 25,
+          cursor: pageParam,
+        })}`,
+        signal,
+      ),
+    getNextPageParam: (last: Paged<AuditLogDto>) => last.pagination.nextCursor ?? undefined,
+  });
 
   const entries = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <header className="mb-5">
         <h1>Audit trail</h1>
         <p className="mt-0.5 text-sm text-t3">
@@ -63,7 +71,7 @@ export function AuditPage() {
       </header>
 
       <div className="mb-3 flex flex-wrap items-end gap-2">
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search
             className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-t4"
             aria-hidden="true"
@@ -75,7 +83,7 @@ export function AuditPage() {
             // user table, so promising a name search would be a lie.
             placeholder="Search action, entity or id"
             aria-label="Search the audit trail"
-            className="h-8 w-64 rounded-md border border-line bg-panel pl-8 pr-2 text-[13px] transition-colors duration-100 hover:border-line3"
+            className="h-8 w-full rounded-md border border-line bg-panel pl-8 pr-2 sm:w-64 text-[13px] transition-colors duration-100 hover:border-line3"
           />
         </div>
 
@@ -181,7 +189,12 @@ export function AuditPage() {
 
       {hasNextPage && (
         <div className="mt-3 flex justify-center">
-          <Button size="sm" variant="outline" onClick={() => void fetchNextPage()} disabled={isFetchingNextPage}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
             {isFetchingNextPage ? "Loading" : "Load more"}
           </Button>
         </div>
@@ -205,23 +218,28 @@ function AuditRow({ entry }: { entry: AuditLogDto }) {
           hasDiff && "hover:bg-hover",
         )}
       >
-        <span className="font-mono text-[11px] text-t1">{entry.action}</span>
-        <span className="flex-1 truncate text-[13px] text-t3">
-          {entry.entityType}
-          {/* A null actor means the system acted, which is how an auto-executed
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+          <span className="font-mono text-[11px] text-t1">{entry.action}</span>
+          <span className="truncate text-[13px] text-t3 sm:flex-1">
+            {entry.entityType}
+            {/* A null actor means the system acted, which is how an auto-executed
               price change is distinguished from a human approval. */}
-          {entry.userId === null && (
-            <span className="ml-2 rounded-sm bg-acc-a px-1.5 py-0.5 text-[11px] text-acc-t2">
-              System
-            </span>
-          )}
+            {entry.userId === null && (
+              <span className="ml-2 rounded-sm bg-acc-a px-1.5 py-0.5 text-[11px] text-acc-t2">
+                System
+              </span>
+            )}
+          </span>
         </span>
         <span className="shrink-0 text-xs text-t4" title={absoluteTime(entry.createdAt)}>
           {relativeTime(entry.createdAt)}
         </span>
         {hasDiff && (
           <ChevronDown
-            className={cn("h-3.5 w-3.5 text-t4 transition-transform duration-200", open && "rotate-180")}
+            className={cn(
+              "h-3.5 w-3.5 text-t4 transition-transform duration-200",
+              open && "rotate-180",
+            )}
             aria-hidden="true"
           />
         )}

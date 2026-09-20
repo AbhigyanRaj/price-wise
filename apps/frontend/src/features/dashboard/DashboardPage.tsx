@@ -65,7 +65,7 @@ export function DashboardPage() {
   // representative one; if it failed the others almost certainly did too.
   if (isError) {
     return (
-      <div className="px-[34px] py-7">
+      <div className="px-4 py-5 md:px-[34px] md:py-7">
         <ErrorState
           title="Could not load your overview"
           description={error instanceof Error ? error.message : "The API did not respond."}

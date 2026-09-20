@@ -62,7 +62,7 @@ export function SettingsPage() {
   if (!org) return <FullPageSpinner />;
 
   return (
-    <div className="max-w-[780px] px-[34px] py-7">
+    <div className="max-w-[780px] px-4 py-5 md:px-[34px] md:py-7">
       <header className="mb-6">
         <h1 className="text-[22px] tracking-[-0.022em]">Risk &amp; automation</h1>
         <p className="mt-1 max-w-[56ch] text-[12.5px] leading-[1.6] text-t3">

@@ -34,7 +34,7 @@ export function TopBar({
 
   return (
     <header className="sticky top-0 z-30 flex h-[46px] shrink-0 items-center border-b border-line bg-chrome">
-      <div className="grid w-16 shrink-0 place-items-center">
+      <div className="grid w-11 shrink-0 place-items-center md:w-16">
         <Mark />
       </div>
 
@@ -42,8 +42,8 @@ export function TopBar({
         <span className="truncate text-[12.5px] font-semibold text-t0">
           {session?.organization.name}
         </span>
-        <span aria-hidden="true" className="h-3.5 w-px bg-line" />
-        <span className="flex items-center gap-1.5">
+        <span aria-hidden="true" className="hidden h-3.5 w-px bg-line sm:block" />
+        <span className="hidden items-center gap-1.5 sm:flex">
           {/* Slow enough to read as "live" rather than as something demanding
               attention. */}
           <span className="pw-breathe h-[5px] w-[5px] rounded-full bg-pos" aria-hidden="true" />
@@ -51,27 +51,34 @@ export function TopBar({
         </span>
       </div>
 
-      <div className="flex flex-1 justify-center px-6">
+      <div className="flex flex-1 justify-center px-2 md:px-6">
         <button
           type="button"
           onClick={onOpenPalette}
-          className="flex h-[27px] w-full max-w-[400px] items-center gap-2 rounded-md border border-line bg-input px-2.5 text-left transition-colors duration-[110ms] hover:border-line3"
+          // Collapses to an icon button below md: a keyboard shortcut is
+          // useless on a phone, but this is the only discovery affordance, so
+          // it stays reachable rather than hiding.
+          aria-label="Search"
+          aria-keyshortcuts="Meta+K Control+K"
+          className="flex h-8 w-8 items-center justify-center gap-2 rounded-md border border-line bg-input transition-colors duration-[110ms] hover:border-line3 md:h-[27px] md:w-full md:max-w-[400px] md:justify-start md:px-2.5 md:text-left"
         >
           <Search size={12} strokeWidth={1.4} className="shrink-0 text-t4" aria-hidden="true" />
-          <span className="flex-1 truncate text-[11.5px] text-t4">
+          <span className="hidden flex-1 truncate text-[11.5px] text-t4 md:block">
             Search products, decisions, activity
           </span>
-          <kbd className="keycap shrink-0">⌘K</kbd>
+          <kbd aria-hidden="true" className="keycap hidden shrink-0 md:inline-block">
+            ⌘K
+          </kbd>
         </button>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2.5 pr-3.5">
+      <div className="flex shrink-0 items-center gap-2.5 pr-2 md:pr-3.5">
         {pendingCount > 0 && (
           <button
             type="button"
             onClick={() => navigate("/decisions")}
             className={cn(
-              "flex items-center gap-1.5 rounded-md border border-acc-border bg-acc-a px-2 py-1",
+              "hidden items-center gap-1.5 rounded-md border border-acc-border bg-acc-a px-2 py-1 md:flex",
               "text-[11.5px] font-medium text-acc-t2 transition-colors duration-[110ms] hover:bg-acc-a2",
             )}
           >
@@ -80,7 +87,7 @@ export function TopBar({
           </button>
         )}
 
-        <span aria-hidden="true" className="h-3.5 w-px bg-line" />
+        <span aria-hidden="true" className="hidden h-3.5 w-px bg-line md:block" />
         <ThemeControl />
 
         <span

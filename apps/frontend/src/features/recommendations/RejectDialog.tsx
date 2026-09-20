@@ -49,7 +49,7 @@ export function RejectDialog({
         aria-modal="true"
         aria-labelledby="reject-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-lg border border-line bg-panel p-5 shadow-[var(--shadow-overlay)]"
+        className="w-[calc(100vw-24px)] max-w-md rounded-lg border border-line bg-panel p-4 shadow-[var(--shadow-overlay)] sm:w-full sm:p-5"
       >
         <h2 id="reject-title" className="mb-1">
           Reject this recommendation

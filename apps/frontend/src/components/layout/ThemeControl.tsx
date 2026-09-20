@@ -39,7 +39,10 @@ export function ThemeControl() {
             title={label}
             onClick={() => setPreference(value)}
             className={cn(
-              "grid h-[21px] w-[24px] place-items-center rounded-[5px] transition-colors duration-[110ms]",
+              // 24x21 fails the 24px minimum on height, and adjacent controls
+              // cannot claim the spacing exception. Grown below md only, into
+              // whitespace that already exists.
+              "grid h-7 w-8 place-items-center rounded-[5px] transition-colors duration-[110ms] md:h-[21px] md:w-[24px]",
               active ? "bg-line3 text-t1" : "text-t4 hover:text-t2",
             )}
           >

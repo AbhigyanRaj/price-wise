@@ -4,6 +4,8 @@ import { ErrorState, FullPageSpinner } from "@/components/data/States";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/features/auth/useAuth";
 import { ApiError } from "@/lib/api";
+import { cn } from "@/lib/cn";
+import { LG, useMediaQuery } from "@/hooks/useMediaQuery";
 import { money } from "@/lib/format";
 import {
   useApprove,
@@ -32,6 +34,11 @@ export function DecisionsPage() {
   const { session } = useAuth();
   const toast = useToast();
 
+  // One pane at a time below lg. The selection already lives in the URL, so
+  // this needs no new state: /decisions is the queue, /decisions/:id is the
+  // detail, and browser Back is the "up" gesture for free.
+  const isWide = useMediaQuery(LG);
+
   const [filter, setFilter] = useState<QueueFilter>("PENDING");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [rejecting, setRejecting] = useState(false);
@@ -51,17 +58,20 @@ export function DecisionsPage() {
     return [...flat].sort((a, b) => b.confidenceScore - a.confidenceScore);
   }, [queue.data]);
 
-  const selectedId = recommendationId ?? items[0]?.id ?? null;
+  // Both the fallback and the effect below are gated. Auto-selecting on a
+  // phone would mean the user never sees the queue they just navigated to, and
+  // would fire a detail request for a row they did not choose.
+  const selectedId = recommendationId ?? (isWide ? (items[0]?.id ?? null) : null);
   const detail = useRecommendation(selectedId ?? undefined);
   const threshold = session?.organization.confidenceThreshold ?? 0.8;
 
   // Keep the URL pointing at something real. Resolving the last item in a
   // filter would otherwise leave a detail pane showing a row that is gone.
   useEffect(() => {
-    if (!recommendationId && items[0]) {
+    if (isWide && !recommendationId && items[0]) {
       navigate(`/decisions/${items[0].id}`, { replace: true });
     }
-  }, [recommendationId, items, navigate]);
+  }, [isWide, recommendationId, items, navigate]);
 
   function select(id: string) {
     setActionError(null);
@@ -191,8 +201,9 @@ export function DecisionsPage() {
   const busy = approve.isPending || reject.isPending || modify.isPending;
 
   return (
-    <div className="flex h-[calc(100dvh-46px)]">
+    <div className="flex h-full lg:h-[calc(100dvh-46px)]">
       <DecisionQueue
+        className={recommendationId ? "hidden lg:flex" : undefined}
         items={items}
         isPending={queue.isPending}
         filter={filter}
@@ -217,15 +228,24 @@ export function DecisionsPage() {
         batchPending={batch.isPending}
       />
 
-      <div className="min-w-0 flex-1">
+      {/* min-h-0 is load-bearing. A flex child defaults to min-height:auto, so
+          without it this pane grows to its content height, the detail pane's
+          own overflow-y-auto never engages, and the page scrolls instead: the
+          queue beside it scrolls out of view while you read a decision. */}
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          !recommendationId && "hidden lg:flex",
+        )}
+      >
         {actionError && (
-          <div role="alert" className="border-b border-neg-border bg-neg-a px-[34px] py-2">
+          <div role="alert" className="border-b border-neg-border bg-neg-a px-4 py-2 md:px-[34px]">
             <p className="text-[12.5px] text-neg">{actionError}</p>
           </div>
         )}
 
         {!selectedId && !queue.isPending && (
-          <div className="grid h-full place-items-center px-8 text-center">
+          <div className="grid min-h-0 flex-1 place-items-center px-6 text-center">
             <p className="max-w-sm text-[13px] text-t3">
               Nothing selected. Pick a decision from the queue, or switch filters to see resolved
               ones.

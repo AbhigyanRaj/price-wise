@@ -49,23 +49,43 @@ export function Rail({
   const { pathname } = useLocation();
 
   useLayoutEffect(() => {
-    const nav = navRef.current;
-    const active = nav?.querySelector<HTMLElement>("[data-active='true']");
-    if (!nav || !active) {
-      setIndicator((prev) => ({ ...prev, visible: false }));
-      return;
+    function measure() {
+      const nav = navRef.current;
+      const active = nav?.querySelector<HTMLElement>("[data-active='true']");
+      if (!nav || !active) {
+        setIndicator((prev) => ({ ...prev, visible: false }));
+        return;
+      }
+      // Centre a 24px bar on the 52px item.
+      setIndicator({ top: active.offsetTop + (active.offsetHeight - 24) / 2, visible: true });
     }
-    // Centre a 24px bar on the 52px item.
-    setIndicator({ top: active.offsetTop + (active.offsetHeight - 24) / 2, visible: true });
+
+    measure();
+    // Without this, crossing the breakpoint without navigating leaves the bar
+    // at its last measured position, which after a row layout is 0: parked on
+    // the first item. Reviewers resize windows.
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, [pathname, items.length]);
 
   return (
-    <aside className="flex w-16 shrink-0 flex-col items-center border-r border-line bg-chrome">
-      <nav ref={navRef} aria-label="Main" className="relative flex w-full flex-col pt-2">
+    <aside
+      className={cn(
+        // A bottom tab bar below md, the 64px rail at and above it. One nav
+        // element either way: a second, hidden one would break the e2e spec's
+        // strict role matcher, and duplicate the landmark for a screen reader.
+        "flex w-full shrink-0 flex-row items-center border-t border-line bg-chrome",
+        "order-last pb-[env(safe-area-inset-bottom)]",
+        "md:order-none md:w-16 md:flex-col md:border-r md:border-t-0 md:pb-0",
+      )}
+    >
+      <nav ref={navRef} aria-label="Main" className="relative flex w-full flex-row md:flex-col md:pt-2">
         <span
           aria-hidden="true"
           className={cn(
-            "absolute left-0 h-6 w-0.5 rounded-r-sm bg-acc2 transition-[top,opacity] duration-[220ms]",
+            // Hidden below md: in a row layout every offsetTop is 0, so the
+            // measurement is meaningless and the bar would sit on the first item.
+            "absolute left-0 hidden h-6 w-0.5 rounded-r-sm bg-acc2 transition-[top,opacity] duration-[220ms] md:block",
             indicator.visible ? "opacity-100" : "opacity-0",
           )}
           style={{ top: indicator.top, transitionTimingFunction: "var(--ease-spatial)" }}
@@ -78,7 +98,8 @@ export function Rail({
             end={to === "/"}
             className={({ isActive }) =>
               cn(
-                "relative flex h-[52px] w-full flex-col items-center justify-center gap-1 transition-colors duration-[110ms]",
+                "relative flex h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-1 transition-colors duration-[110ms]",
+                "md:w-full md:flex-initial",
                 isActive ? "text-t0" : "text-t4 hover:text-t1",
               )
             }
@@ -88,6 +109,14 @@ export function Rail({
                 {/* Read by the indicator effect above, so the bar follows the
                     router rather than a second source of truth. */}
                 <span data-active={isActive} className="contents" />
+                {/* The mobile equivalent of the sliding rail indicator. Static,
+                    so reduced motion is a non-issue. */}
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-x-3 top-0 h-0.5 rounded-b-sm bg-acc2 md:hidden"
+                  />
+                )}
                 <span className="relative">
                   <Icon size={16} strokeWidth={1.2} aria-hidden="true" />
                   {to === "/decisions" && pendingCount > 0 && (
@@ -114,7 +143,7 @@ export function Rail({
         onClick={onSignOut}
         aria-label="Sign out"
         title="Sign out"
-        className="mb-3 mt-auto grid h-9 w-9 place-items-center rounded-md text-t4 transition-colors duration-[110ms] hover:bg-hover hover:text-t1"
+        className="grid h-[52px] w-12 shrink-0 place-items-center border-l border-line text-t4 transition-colors duration-[110ms] hover:bg-hover hover:text-t1 md:mb-3 md:mt-auto md:h-9 md:w-9 md:rounded-md md:border-l-0"
       >
         <LogOut size={16} strokeWidth={1.2} aria-hidden="true" />
       </button>

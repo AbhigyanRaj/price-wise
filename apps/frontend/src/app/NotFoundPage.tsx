@@ -13,7 +13,7 @@ export function NotFoundPage() {
   useEffect(() => heading.current?.focus(), []);
 
   return (
-    <div className="px-[34px] py-10">
+    <div className="px-4 py-10 md:px-[34px]">
       <h1 ref={heading} tabIndex={-1} className="sr-only">
         Page not found
       </h1>

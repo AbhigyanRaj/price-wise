@@ -24,6 +24,7 @@ export type QueueFilter = (typeof QUEUE_FILTERS)[number]["value"];
  * argument about the analyst being a scarce resource.
  */
 export function DecisionQueue({
+  className,
   items,
   isPending,
   filter,
@@ -36,6 +37,7 @@ export function DecisionQueue({
   onApproveChecked,
   batchPending,
 }: {
+  className?: string | undefined;
   items: RecommendationDto[];
   isPending: boolean;
   filter: QueueFilter;
@@ -49,7 +51,12 @@ export function DecisionQueue({
   batchPending: boolean;
 }) {
   return (
-    <div className="flex w-[376px] shrink-0 flex-col border-r border-line bg-chrome">
+    <div
+      className={cn(
+        "flex w-full shrink-0 flex-col border-r border-line bg-chrome lg:w-[376px]",
+        className,
+      )}
+    >
       <div className="border-b border-line px-4 py-3">
         <div className="mb-2.5 flex items-baseline justify-between gap-2">
           <h1 className="text-[15px] font-semibold tracking-[-0.01em] text-t0">Decisions</h1>
@@ -146,7 +153,8 @@ export function DecisionQueue({
         </ul>
       </div>
 
-      <p className="border-t border-line px-4 py-2 font-mono text-[10px] text-t5">
+      {/* Meaningless on touch. */}
+      <p className="hidden border-t border-line px-4 py-2 font-mono text-[10px] text-t5 lg:block">
         J/K move &nbsp; A approve &nbsp; M modify &nbsp; R reject
       </p>
     </div>
@@ -185,7 +193,10 @@ function QueueCard({
             checked={checked}
             onChange={onToggleCheck}
             aria-label={`Select ${rec.product?.sku}`}
-            className="mt-0.5 h-[13px] w-[13px] shrink-0 accent-[var(--acc)]"
+            // 13px is the one real touch-target violation on this screen. The
+            // negative margin cancels the padding, so the box does not move a
+            // pixel while the hit area grows to 29px.
+            className="-m-2 mt-0.5 h-[13px] w-[13px] shrink-0 p-2 accent-[var(--acc)] md:m-0 md:p-0"
           />
         )}
 
