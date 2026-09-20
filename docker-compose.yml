@@ -1,9 +1,16 @@
-# Local Postgres so a clean clone needs no Supabase account and no shared staging
-# database. Supabase *is* Postgres, so Prisma speaks the same protocol to both.
+# The whole stack in one command.
+#
+# `docker compose up` brings up Postgres, the API and the web app, migrates and
+# seeds the database, and leaves a populated product at http://localhost:5173.
+# `bun run db:up` starts only the database, for the faster Bun dev path.
+#
+# Local Postgres rather than a shared staging database, so a clean clone needs
+# no cloud account. Supabase *is* Postgres, so Prisma speaks the same protocol
+# to both.
 #
 # Ports are overridable: 5432 and 8080 are commonly already in use (a Homebrew
 # Postgres, another dev server). Defaults match .env.example; override with
-# POSTGRES_PORT=5433 docker compose up -d
+# POSTGRES_PORT=5433 docker compose up
 services:
   postgres:
     image: postgres:16-alpine
@@ -37,6 +44,66 @@ services:
       - "${ADMINER_PORT:-8080}:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      # Repository root, not apps/backend: the workspace link to
+      # @pricewise/shared only resolves from here.
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-4000}:4000"
+    # The reviewer's single setup step is editing apps/backend/.env, so read it
+    # here. Compose's ${VAR} interpolation only ever reads the project root
+    # .env, which would mean asking them to edit a second file.
+    env_file:
+      - apps/backend/.env
+    # These override anything in that file, because inside the network the
+    # database is `postgres` rather than localhost and the origin is the
+    # compose one.
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      LOG_LEVEL: info
+      # `postgres` is the compose service name, resolved on the internal
+      # network. Not localhost, which inside a container is the container.
+      DATABASE_URL: postgresql://pricewise:pricewise@postgres:5432/pricewise
+      # Same origin as the browser sees, because nginx proxies /api to this
+      # service. That keeps the auth cookies first-party and means none of the
+      # cross-site SameSite=None handling is needed to run locally.
+      CORS_ORIGIN: http://localhost:${WEB_PORT:-5173}
+      COOKIE_SECURE: "false"
+      # Dev-only values. The deployed configuration supplies real ones; these
+      # exist so `docker compose up` works with nothing but a Groq key.
+      JWT_ACCESS_SECRET: docker-compose-access-secret-at-least-32-chars
+      JWT_REFRESH_SECRET: docker-compose-refresh-secret-at-least-32-chars
+      # GROQ_API_KEY and the model ids come from env_file above, which is the
+      # one file the setup instructions ask the reviewer to touch.
+      # A random rollback during a first look reads as a bug, not a feature.
+      MOCK_PLATFORM_FAILURE_RATE: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # /healthz pings the database, so this goes green only once the API can
+      # actually serve, not merely once the process is up.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/healthz || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    depends_on:
+      api:
         condition: service_healthy
 
 volumes:
