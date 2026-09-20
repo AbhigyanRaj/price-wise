@@ -42,6 +42,14 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      # Two checks in one, because the contract check has to import the route
+      # modules and that boots lib/env.ts, which refuses to start on a missing
+      # variable. Feeding it the committed .env.example means the step also
+      # proves the template is complete: add a required variable without
+      # documenting it there and this fails.
+      - name: .env.example covers every required variable
+        run: cp apps/backend/.env.example apps/backend/.env
+
       # An API document nobody checks stops being true within a sprint. This
       # reads the routers and fails if a route is undocumented, documented but
       # gone, or if openapi.json was not regenerated from the YAML.
