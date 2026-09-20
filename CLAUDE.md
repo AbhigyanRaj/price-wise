@@ -31,7 +31,6 @@ Read these before implementing anything. They all live in `docs/`.
 | Document | Contains | When to consult |
 |---|---|---|
 | `docs/PRD.md` | ~200 numbered requirements (FR-*, AI-*, NFR-*, MT-*, TR-*), personas, journeys, edge cases, screen specs | Before building any feature |
-| `docs/IMPLEMENTATION_PLAN.md` | Phases 0–6, exact file paths, code, acceptance criteria, commit messages | Before starting any phase |
 | `docs/Pricewise_API_Contract.pdf` / `docs/openapi.yaml` | 29 operations across 24 paths, error codes, SSE contract | Before writing any route |
 | `docs/Pricewise_HLD.excalidraw` | Six architecture diagrams | For structural questions |
 
@@ -233,7 +232,7 @@ explain about it.** If I can't, we simplify it.
 
 **Known open items:**
 - Confidence penalties + 0.80 threshold are a hypothesis — calibrate against seed
-  data on Day 4 per `IMPLEMENTATION_PLAN.md` §3.8.1, then update the PRD.
+  data on Day 4, then update the PRD.
 - Render runtime (`node` vs native Bun) unverified — resolve in Phase 0.0.
 - `Bun.password` viability unverified — resolve in Phase 0.0.
 

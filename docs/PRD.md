@@ -10,7 +10,7 @@
 | **Author** | Abhigyan |
 | **Context** | Klypup Applied AI Intern — Technical Assessment, Option B |
 | **Build window** | 5 calendar days |
-| **Related documents** | `IMPLEMENTATION_PLAN.md`, `Pricewise_API_Contract.pdf`, `Pricewise_HLD.excalidraw`, `ARCHITECTURE.md`, `DECISIONS.md` |
+| **Related documents** | `openapi.yaml`, `Pricewise_HLD.excalidraw`, `ARCHITECTURE.md`, `DECISIONS.md` |
 
 ---
 
@@ -581,7 +581,7 @@ least one acceptance criterion that is observable without reading code.
 # 10. AI product requirements
 
 This section specifies what the AI must *do as a product feature*, not how it is
-implemented. Implementation detail lives in `IMPLEMENTATION_PLAN.md` Phase 3.
+implemented. How it was built is described in `ARCHITECTURE.md` section 4.
 
 ## 10.1 Why five agents rather than one prompt
 

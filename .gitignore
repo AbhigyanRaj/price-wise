@@ -30,6 +30,14 @@ src/generated/
 # and this repository is public. Kept on disk, never committed.
 assignment.pdf
 
+# Working documents, not deliverables. The kickoff prompt, the Phase 0 spike
+# notes and the implementation plan were scaffolding for building this; they
+# describe intent rather than what shipped, and ARCHITECTURE.md and
+# DECISIONS.md say the same things about the finished system. Kept on disk.
+docs/KICKOFF_PROMPT.md
+docs/SPIKE_NOTES.md
+docs/IMPLEMENTATION_PLAN.md
+
 # Test output
 coverage/
 playwright-report/
