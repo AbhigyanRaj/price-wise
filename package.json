@@ -1,7 +1,10 @@
 {
   "name": "pricewise",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "dev:api": "bun run --cwd apps/backend dev",
@@ -18,7 +21,8 @@
     "db:migrate": "bun run --cwd apps/backend db:migrate",
     "db:seed": "bun run --cwd apps/backend db:seed",
     "db:reset": "bun run --cwd apps/backend db:reset",
-    "db:studio": "bun run --cwd apps/backend db:studio"
+    "db:studio": "bun run --cwd apps/backend db:studio",
+    "docs:openapi": "bun run --cwd apps/backend docs:openapi"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

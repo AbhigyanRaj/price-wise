@@ -14,7 +14,8 @@
     "db:seed": "bun run src/scripts/seed.ts",
     "db:reset": "prisma migrate reset --force && bun run db:seed",
     "db:studio": "prisma studio",
-    "test:setup": "DATABASE_URL=\"${TEST_DATABASE_URL:-postgresql://pricewise:pricewise@localhost:5432/pricewise_test}\" prisma migrate deploy"
+    "test:setup": "DATABASE_URL=\"${TEST_DATABASE_URL:-postgresql://pricewise:pricewise@localhost:5432/pricewise_test}\" prisma migrate deploy",
+    "docs:openapi": "bun run src/scripts/buildOpenapi.ts"
   },
   "dependencies": {
     "@pricewise/shared": "workspace:*",

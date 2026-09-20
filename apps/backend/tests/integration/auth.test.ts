@@ -234,6 +234,9 @@ describe("cross-cutting middleware", () => {
       body: JSON.stringify({ email: ADA.email, password: ADA.password }),
     });
     expect(res.status).toBe(403);
+    // A distinct code from an RBAC denial: both are 403, but only one of them
+    // is fixed by adding a header.
+    expect((await readJson(res)).error?.code).toBe("CSRF_REQUIRED");
   });
 
   test("rate-limits repeated failed logins but not successful ones", async () => {

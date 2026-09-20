@@ -1,0 +1,2703 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Pricewise — Dynamic Pricing Intelligence API",
+    "description": "REST API for the multi-tenant, multi-agent dynamic pricing platform.\n\n**Four rules apply to every endpoint below.**\n\n1. **Auth is a cookie, not a bearer token.** `POST /auth/login` sets an\n   httpOnly `access_token` (15 min, path `/`) and `refresh_token` (path\n   `/auth`). The browser sends them automatically. JavaScript never sees\n   them, so there is no `Authorization` header anywhere in this document.\n\n2. **Every state-changing request must send `X-Pricewise-Client`.** Any\n   value will do. A cross-site HTML form cannot set a custom header, so\n   requiring one rejects forged submissions before they reach a handler.\n   Omit it on a POST, PATCH, PUT or DELETE and you get **403\n   `CSRF_REQUIRED`**, whatever else is correct about the request.\n\n3. **One envelope, always.** Success is\n   `{ success: true, data, pagination? }`; failure is\n   `{ success: false, error: { code, message, details? } }`. No endpoint\n   returns a bare array, a bare string, or a value outside `data`.\n   `details` is omitted entirely when empty rather than sent as null.\n\n4. **Another tenant's resource returns 404, not 403.** A 403 would confirm\n   the row exists, which is itself a leak. Every tenant-scoped query is\n   filtered by the `orgId` on the verified JWT, and a client-supplied\n   `organizationId` in a body or query is stripped and logged.\n\nAll LLM calls happen server-side. The browser never talks to Groq.\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://pricewise-api.onrender.com",
+      "description": "Production (Render)"
+    },
+    {
+      "url": "http://localhost:4000",
+      "description": "Local development"
+    }
+  ],
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Organizations"
+    },
+    {
+      "name": "Products"
+    },
+    {
+      "name": "Recommendations"
+    },
+    {
+      "name": "Audit"
+    },
+    {
+      "name": "Mock Ecommerce"
+    }
+  ],
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create a new organization and its first admin user",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "name",
+                  "organizationName"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "organizationName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account + organization created, auth cookies set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessUser"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already in use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/signup/invite": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Join an existing organization via an invite code",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "name",
+                  "inviteCode"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "inviteCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Joined organization, auth cookies set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessUser"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invite invalid, expired, or already used",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log in with email + password",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Auth cookies set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Rotate the refresh token and issue a new access token",
+        "description": "Refresh tokens rotate on use, so a replayed token is treated as theft and revokes the whole chain. The client must therefore serialise refreshes; five queries failing with 401 at once must produce one refresh, not five.\n",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "New auth cookies set, and the identity they belong to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh token missing, expired, or revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Revoke the current refresh token and clear cookies",
+        "responses": {
+          "200": {
+            "description": "Logged out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get the current authenticated user + organization",
+        "responses": {
+          "200": {
+            "description": "Current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/org/settings": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get organization settings (thresholds, margin floors)",
+        "responses": {
+          "200": {
+            "description": "Organization settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Organization"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Update organization settings (admin only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "confidenceThreshold": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 1
+                  },
+                  "maxPriceDeltaPct": {
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Organization"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires ADMIN role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/org/invites": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List pending invites (admin only)",
+        "responses": {
+          "200": {
+            "description": "List of invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Invite"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Create an invite code (admin only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "role"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "role": {
+                    "$ref": "#/components/schemas/Role"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invite created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Invite"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires ADMIN role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/org/members": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List members of the current organization",
+        "responses": {
+          "200": {
+            "description": "Members, scoped to the caller's organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires ADMIN role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/org/category-rules": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Per-category margin floors and delta caps",
+        "description": "A category rule overrides the organization default for products in that category. Electronics run thinner margins than beauty, so one organization-wide floor either strangles one or fails to protect the other.\n",
+        "responses": {
+          "200": {
+            "description": "Rules for this organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CategoryRule"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Create or replace one category rule",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CategoryRule"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires ADMIN role, or the client header is missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/org/category-rules/{category}": {
+      "delete": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Drop a category rule, reverting it to the organization default",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          },
+          {
+            "in": "path",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, no body"
+          },
+          "403": {
+            "description": "Requires ADMIN role, or the client header is missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such rule for this organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/org/invites/{inviteId}": {
+      "delete": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Revoke an unused invite",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          },
+          {
+            "in": "path",
+            "name": "inviteId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires ADMIN role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or belongs to another organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "List products in the current organization's catalog",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "inventoryStatus",
+            "schema": {
+              "$ref": "#/components/schemas/InventoryStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "currentPrice",
+                "inventoryLevel",
+                "updatedAt"
+              ],
+              "default": "updatedAt"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortDir",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated product list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Product"
+                          }
+                        },
+                        "pagination": {
+                          "$ref": "#/components/schemas/OffsetPagination"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Products"
+        ],
+        "summary": "Create a product (admin only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Product"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/categories": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Distinct categories present in this organization's catalog",
+        "description": "Feeds the catalog filter and the category field on the product form.",
+        "responses": {
+          "200": {
+            "description": "Category names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{productId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProductId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Get a single product",
+        "responses": {
+          "200": {
+            "description": "Product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Product"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or belongs to another organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Products"
+        ],
+        "summary": "Update a product (admin only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Product"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Products"
+        ],
+        "summary": "Delete a product (admin only)",
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/products/{productId}/simulate-market-event": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProductId"
+        }
+      ],
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Products"
+        ],
+        "summary": "Mutate a product's competitor price or demand signal to simulate a live market event",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "eventType"
+                ],
+                "properties": {
+                  "eventType": {
+                    "type": "string",
+                    "enum": [
+                      "competitor_price_drop",
+                      "competitor_price_increase",
+                      "demand_spike",
+                      "new_competitor"
+                    ]
+                  },
+                  "magnitudePct": {
+                    "type": "number",
+                    "description": "e.g. -15 for a 15% competitor price drop"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event applied, with what was actually done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "eventType": {
+                              "type": "string"
+                            },
+                            "magnitudePct": {
+                              "type": "number"
+                            },
+                            "summary": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{productId}/generate-recommendation": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProductId"
+        }
+      ],
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Products"
+        ],
+        "summary": "Trigger the 5-agent pricing pipeline for this product",
+        "description": "Runs the five agents and streams their progress as Server-Sent Events.\nTakes roughly 8 to 12 seconds against the live model.\n\n**This is a POST, not an `EventSource`.** It needs the CSRF header and\na request body cannot ride on `EventSource`, so a client reads the\nresponse body as a stream instead.\n\n**Events are named**, so a client must use `addEventListener(name)`,\nnot `onmessage`. Six names exist. Every payload also repeats its name\nin a `type` field, so a single parser can switch on the body alone:\n\n| Event | Payload |\n|---|---|\n| `agent_started` | `{ type, agent, startedAt }` |\n| `agent_completed` | `{ type, agent, durationMs, confidence, output, toolCalls, promptTokens, completionTokens }` |\n| `agent_skipped` | `{ type, agent, reason }` |\n| `agent_failed` | `{ type, agent, error, willRetry }` |\n| `recommendation_ready` | `{ type, autoExecuted, recommendationId, blocked?, executionFailed? }` |\n| `recommendation_failed` | `{ type, error, failedAgent? }` |\n\n`recommendation_ready` carries an **id, not the recommendation**. Fetch\n`GET /recommendations/{id}` for the full object.\n\n**Order.** `MARKET_INTELLIGENCE` and `INVENTORY_COST` start together;\ntheir `agent_started` events share a timestamp. `DEMAND_FORECASTING`,\n`PRICING_STRATEGY` and `EXECUTION_COMPLIANCE` then run in sequence,\nbecause each needs the one before it.\n\n**Failure is in-band.** The stream always returns 200 once it has\nopened, because headers are already flushed by the time an agent can\nfail. A pipeline failure arrives as `recommendation_failed`, never as a\n4xx or 5xx. Check the events, not the status.\n\nA `: keep-alive` comment frame is sent every 15 seconds so proxies do\nnot close an idle connection. Ignore it. Responses carry\n`Cache-Control: no-cache, no-transform` and `X-Accel-Buffering: no`;\nany proxy in front of this must also disable buffering or the whole\nstream arrives at once at the end, which defeats the point.\n\nDisconnecting does not abort the run. The pipeline finishes and the\nrecommendation is persisted either way.\n",
+        "responses": {
+          "200": {
+            "description": "An SSE stream. Example:\n\n```\nevent: agent_started\ndata: {\"type\":\"agent_started\",\"agent\":\"MARKET_INTELLIGENCE\",\"startedAt\":\"2026-09-20T06:16:52.251Z\"}\n\nevent: agent_completed\ndata: {\"type\":\"agent_completed\",\"agent\":\"MARKET_INTELLIGENCE\",\"durationMs\":2219,\"confidence\":0.55,\"output\":{...},\"toolCalls\":[{\"name\":\"get_competitor_prices\",\"args\":{\"lookbackDays\":7},\"durationMs\":4}]}\n\nevent: recommendation_ready\ndata: {\"type\":\"recommendation_ready\",\"autoExecuted\":false,\"recommendationId\":\"f2970c97-...\"}\n```\n",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Newline-delimited SSE frames, one JSON object per data line."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the X-Pricewise-Client header",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such product in this organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations": {
+      "get": {
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "List pricing recommendations, cursor-paginated",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "$ref": "#/components/schemas/RecommendationStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minConfidence",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cursor-paginated recommendation list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PricingRecommendation"
+                          }
+                        },
+                        "pagination": {
+                          "$ref": "#/components/schemas/CursorPagination"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/{recommendationId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RecommendationId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Get full detail including every agent's individual contribution",
+        "responses": {
+          "200": {
+            "description": "Recommendation with agent breakdown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PricingRecommendationDetail"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/{recommendationId}/approve": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RecommendationId"
+        }
+      ],
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Approve a pending recommendation (Pricing Analyst or Admin)",
+        "responses": {
+          "200": {
+            "description": "Approved and executed against the mock e-commerce API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PricingRecommendation"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/{recommendationId}/reject": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RecommendationId"
+        }
+      ],
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Reject a pending recommendation with a reason",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PricingRecommendation"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/{recommendationId}/modify": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RecommendationId"
+        }
+      ],
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Override the recommended price with a manually chosen price",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "modifiedPrice"
+                ],
+                "properties": {
+                  "modifiedPrice": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 1000000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Modified and executed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PricingRecommendation"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/{recommendationId}/undo": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RecommendationId"
+        }
+      ],
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Revert a decision, putting the recommendation back to PENDING",
+        "description": "Backs out an approve, reject or modify and restores the previous price on the platform. This is what the toast's Undo calls. It is bounded: only the user who resolved it can undo it, and only while it is the most recent execution for that product.\n",
+        "responses": {
+          "200": {
+            "description": "Reverted, and back in the queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PricingRecommendation"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or belongs to another organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already undone, still pending, or superseded by a later price change. CONFLICT.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/batch-approve": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Approve several pending recommendations in one request",
+        "description": "Partial success is the normal case, so this never fails as a whole. Each id gets its own result and the caller is told plainly how many went through. A recommendation another request resolved first comes back as not ok rather than silently counting as approved.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per id, in the order supplied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "ok": {
+                                "type": "boolean"
+                              },
+                              "error": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit-logs": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "summary": "List audit log entries, cursor-paginated",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "entityType",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entityId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "description": "Matches action, entityType and an entityId prefix. Deliberately not the actor's name: the name is resolved after the page is read, from the organization's members, so it is not a column to filter on. Filter by userId instead.\n",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cursor-paginated audit log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AuditLog"
+                          }
+                        },
+                        "pagination": {
+                          "$ref": "#/components/schemas/CursorPagination"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit-logs/actions": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "summary": "Distinct action names present in this organization's audit trail",
+        "description": "Populates the Activity filter without the client hardcoding a list.",
+        "responses": {
+          "200": {
+            "description": "Action names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Liveness and dependency check",
+        "description": "Deliberately NOT wrapped in the success envelope, because it is consumed by platform health checks rather than by the client. Groq being unavailable is degraded rather than dead: the catalog, queue, activity and settings all still work, so only generation is affected and the check stays green.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "boolean"
+                        },
+                        "groq": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "uptime": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unreachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "degraded"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock/ecommerce/update-price": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ClientHeader"
+          }
+        ],
+        "tags": [
+          "Mock Ecommerce"
+        ],
+        "summary": "Mock of the storefront's price-update endpoint",
+        "description": "Stands in for the external e-commerce platform. Called by the Execution and Compliance agent, never by the frontend. Simulates latency and an induced failure rate so the rollback path is exercised rather than assumed.\n\n**Unauthenticated, deliberately.** It is mounted outside `requireAuth` because it represents a third-party system, not part of this API's tenant surface. Nothing behind it reads tenant data: it takes a SKU and a price and returns a receipt. In a real deployment this is someone else's endpoint behind their own credentials.\n",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sku",
+                  "newPrice"
+                ],
+                "properties": {
+                  "sku": {
+                    "type": "string"
+                  },
+                  "newPrice": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Price updated on the mock platform",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "sku": {
+                              "type": "string"
+                            },
+                            "price": {
+                              "type": "number"
+                            },
+                            "platformSyncedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "platformRef": {
+                              "type": "string",
+                              "example": "PLT-3f9a21cd"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Simulated platform failure — caller must roll back",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
+      }
+    },
+    "parameters": {
+      "ClientHeader": {
+        "name": "X-Pricewise-Client",
+        "in": "header",
+        "required": true,
+        "description": "Required on every state-changing verb. Any non-empty value. Missing it is a 403 CSRF_REQUIRED. See rule 2 in the description above.\n",
+        "schema": {
+          "type": "string",
+          "example": "web"
+        }
+      },
+      "ProductId": {
+        "name": "productId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "RecommendationId": {
+        "name": "recommendationId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "schemas": {
+      "Role": {
+        "type": "string",
+        "enum": [
+          "ADMIN",
+          "PRICING_ANALYST"
+        ]
+      },
+      "RecommendationStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED",
+          "MODIFIED",
+          "AUTO_EXECUTED",
+          "FAILED"
+        ]
+      },
+      "InventoryStatus": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "NORMAL",
+          "OVERSTOCKED"
+        ]
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "VALIDATION_ERROR",
+          "UNAUTHENTICATED",
+          "REFRESH_INVALID",
+          "FORBIDDEN_ROLE",
+          "CSRF_REQUIRED",
+          "NOT_FOUND",
+          "EMAIL_IN_USE",
+          "INVITE_INVALID",
+          "RATE_LIMITED",
+          "AGENT_TIMEOUT",
+          "LLM_UNAVAILABLE",
+          "EXECUTION_FAILED",
+          "CONFLICT",
+          "INTERNAL_ERROR"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "error"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Field-level errors, keyed by field name."
+              }
+            }
+          }
+        }
+      },
+      "SuccessEnvelope": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "SuccessMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SuccessEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "SuccessUser": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SuccessEnvelope"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "organization": {
+                    "$ref": "#/components/schemas/Organization"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "OffsetPagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "totalCount": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "CursorPagination": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "confidenceThreshold": {
+            "type": "number",
+            "description": "At or above this, a recommendation executes without a human. Below it, the recommendation goes to the approval queue.\n"
+          },
+          "maxPriceDeltaPct": {
+            "type": "number",
+            "description": "Largest single price move allowed, as a fraction."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CategoryRule": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "marginFloorPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "maxPriceDeltaPct": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1,
+            "nullable": true
+          }
+        }
+      },
+      "Invite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "code": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "usedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ProductInput": {
+        "type": "object",
+        "required": [
+          "sku",
+          "name",
+          "category",
+          "currentPrice",
+          "cost",
+          "marginFloorPct",
+          "inventoryLevel"
+        ],
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "currentPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "cost": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "marginFloorPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "inventoryLevel": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ProductPatch": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "currentPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "cost": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "marginFloorPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "inventoryLevel": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "currentPrice": {
+            "type": "number"
+          },
+          "cost": {
+            "type": "number"
+          },
+          "marginFloorPct": {
+            "type": "number"
+          },
+          "margin": {
+            "type": "number"
+          },
+          "belowFloor": {
+            "type": "boolean"
+          },
+          "inventoryLevel": {
+            "type": "integer"
+          },
+          "inventoryStatus": {
+            "$ref": "#/components/schemas/InventoryStatus"
+          },
+          "latestCompetitorPrice": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "competitor": {
+                "type": "string"
+              },
+              "price": {
+                "type": "number"
+              },
+              "scrapedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "pendingRecommendation": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "recommendedPrice": {
+                "type": "number"
+              },
+              "confidenceScore": {
+                "type": "number"
+              },
+              "status": {
+                "$ref": "#/components/schemas/RecommendationStatus"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PricingRecommendation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recommendedPrice": {
+            "type": "number"
+          },
+          "currentPriceAtTime": {
+            "type": "number"
+          },
+          "deltaPct": {
+            "type": "number"
+          },
+          "confidenceScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "factorWeights": {
+            "nullable": true,
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "The four factors the strategy agent weighted, summing to 1."
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecommendationStatus"
+          },
+          "resolvedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "resolvedBy": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "modifiedPrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "product": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "currentPrice": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "ToolCall": {
+        "type": "object",
+        "description": "One tool the model chose to call, with the arguments it chose.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "get_competitor_prices"
+          },
+          "args": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "durationMs": {
+            "type": "integer"
+          }
+        }
+      },
+      "AgentRun": {
+        "type": "object",
+        "description": "One agent invocation, persisted whether it succeeded or failed. This is the explainability record: it carries the tool calls the model decided to make, which is what lets a reviewer see how a price was reached.\n",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agentName": {
+            "type": "string",
+            "enum": [
+              "MARKET_INTELLIGENCE",
+              "DEMAND_FORECASTING",
+              "INVENTORY_COST",
+              "PRICING_STRATEGY",
+              "EXECUTION_COMPLIANCE"
+            ]
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "output": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "example": "openai/gpt-oss-20b"
+          },
+          "promptTokens": {
+            "type": "integer"
+          },
+          "completionTokens": {
+            "type": "integer"
+          },
+          "durationMs": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PriceExecution": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "oldPrice": {
+            "type": "number"
+          },
+          "newPrice": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "platformRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PricingRecommendationDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PricingRecommendation"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "agentRuns": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AgentRun"
+                }
+              },
+              "executions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PriceExecution"
+                }
+              },
+              "comparable": {
+                "type": "array",
+                "description": "Past decisions on similar products, for context.",
+                "items": {
+                  "$ref": "#/components/schemas/PricingRecommendation"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AuditLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "type": "string",
+            "example": "PRICE_APPROVED_AND_EXECUTED"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "beforeValue": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "afterValue": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

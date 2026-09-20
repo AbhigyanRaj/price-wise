@@ -13,5 +13,13 @@ export function csrfGuard(req: Request, _res: Response, next: NextFunction) {
   if (SAFE_METHODS.has(req.method)) return next();
   if (req.header(REQUIRED_HEADER)) return next();
 
-  next(new AppError("FORBIDDEN_ROLE", "Missing client header"));
+  // Its own code, not FORBIDDEN_ROLE. Both are 403, but a client that reads
+  // the code cannot otherwise tell "your role is insufficient" apart from "you
+  // forgot a header", and only one of those is worth retrying.
+  next(
+    new AppError(
+      "CSRF_REQUIRED",
+      `Missing ${REQUIRED_HEADER} header. State-changing requests must send it; a cross-site form cannot.`,
+    ),
+  );
 }

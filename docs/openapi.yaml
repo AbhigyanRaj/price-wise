@@ -1,12 +1,34 @@
 openapi: 3.0.3
 info:
   title: Pricewise — Dynamic Pricing Intelligence API
-  description: >
-    REST API for the multi-tenant, multi-agent dynamic pricing intelligence
-    platform. All AI/LLM calls happen server-side only; the frontend never
-    calls Groq directly. Auth uses httpOnly cookies (access + refresh),
-    so most endpoints have no bearer token in the request — the cookie
-    is sent automatically by the browser.
+  description: |
+    REST API for the multi-tenant, multi-agent dynamic pricing platform.
+
+    **Four rules apply to every endpoint below.**
+
+    1. **Auth is a cookie, not a bearer token.** `POST /auth/login` sets an
+       httpOnly `access_token` (15 min, path `/`) and `refresh_token` (path
+       `/auth`). The browser sends them automatically. JavaScript never sees
+       them, so there is no `Authorization` header anywhere in this document.
+
+    2. **Every state-changing request must send `X-Pricewise-Client`.** Any
+       value will do. A cross-site HTML form cannot set a custom header, so
+       requiring one rejects forged submissions before they reach a handler.
+       Omit it on a POST, PATCH, PUT or DELETE and you get **403
+       `CSRF_REQUIRED`**, whatever else is correct about the request.
+
+    3. **One envelope, always.** Success is
+       `{ success: true, data, pagination? }`; failure is
+       `{ success: false, error: { code, message, details? } }`. No endpoint
+       returns a bare array, a bare string, or a value outside `data`.
+       `details` is omitted entirely when empty rather than sent as null.
+
+    4. **Another tenant's resource returns 404, not 403.** A 403 would confirm
+       the row exists, which is itself a leak. Every tenant-scoped query is
+       filtered by the `orgId` on the verified JWT, and a client-supplied
+       `organizationId` in a body or query is stripped and logged.
+
+    All LLM calls happen server-side. The browser never talks to Groq.
   version: 1.0.0
 servers:
   - url: https://pricewise-api.onrender.com
@@ -18,6 +40,7 @@ security:
   - cookieAuth: []
 
 tags:
+  - name: Health
   - name: Auth
   - name: Organizations
   - name: Products
@@ -29,6 +52,8 @@ paths:
   # ---------------------------------------------------------------- AUTH
   /auth/signup:
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Auth]
       summary: Create a new organization and its first admin user
       security: []
@@ -63,6 +88,8 @@ paths:
 
   /auth/signup/invite:
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Auth]
       summary: Join an existing organization via an invite code
       security: []
@@ -92,6 +119,8 @@ paths:
 
   /auth/login:
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Auth]
       summary: Log in with email + password
       security: []
@@ -124,15 +153,22 @@ paths:
 
   /auth/refresh:
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Auth]
       summary: Rotate the refresh token and issue a new access token
+      description: >
+        Refresh tokens rotate on use, so a replayed token is treated as theft
+        and revokes the whole chain. The client must therefore serialise
+        refreshes; five queries failing with 401 at once must produce one
+        refresh, not five.
       security: []
       responses:
         '200':
-          description: New auth cookies set
+          description: New auth cookies set, and the identity they belong to
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/SuccessMessage' }
+              schema: { $ref: '#/components/schemas/SuccessUser' }
         '401':
           description: Refresh token missing, expired, or revoked
           content:
@@ -141,6 +177,8 @@ paths:
 
   /auth/logout:
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Auth]
       summary: Revoke the current refresh token and clear cookies
       responses:
@@ -183,6 +221,8 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/Organization' }
     patch:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Organizations]
       summary: Update organization settings (admin only)
       requestBody:
@@ -191,9 +231,14 @@ paths:
           application/json:
             schema:
               type: object
+              minProperties: 1
               properties:
-                confidenceThreshold: { type: number, minimum: 0, maximum: 1 }
                 name: { type: string }
+                # Floored at 0.5 deliberately. Below that, "auto-execute" would
+                # mean executing on a coin flip, which is not a policy anyone
+                # should be able to set by dragging a slider.
+                confidenceThreshold: { type: number, minimum: 0.5, maximum: 1 }
+                maxPriceDeltaPct: { type: number, minimum: 0.01, maximum: 1 }
       responses:
         '200':
           description: Updated
@@ -229,6 +274,8 @@ paths:
                         type: array
                         items: { $ref: '#/components/schemas/Invite' }
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Organizations]
       summary: Create an invite code (admin only)
       requestBody:
@@ -281,11 +328,90 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /org/category-rules:
+    get:
+      tags: [Organizations]
+      summary: Per-category margin floors and delta caps
+      description: >
+        A category rule overrides the organization default for products in that
+        category. Electronics run thinner margins than beauty, so one
+        organization-wide floor either strangles one or fails to protect the
+        other.
+      responses:
+        '200':
+          description: Rules for this organization
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CategoryRule' }
+    put:
+      tags: [Organizations]
+      summary: Create or replace one category rule
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryRule' }
+      responses:
+        '200':
+          description: The stored rule
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CategoryRule' }
+        '403':
+          description: Requires ADMIN role, or the client header is missing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /org/category-rules/{category}:
+    delete:
+      tags: [Organizations]
+      summary: Drop a category rule, reverting it to the organization default
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
+        - in: path
+          name: category
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Deleted, no body
+        '403':
+          description: Requires ADMIN role, or the client header is missing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: No such rule for this organization
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /org/invites/{inviteId}:
     delete:
       tags: [Organizations]
       summary: Revoke an unused invite
       parameters:
+        - $ref: '#/components/parameters/ClientHeader'
         - in: path
           name: inviteId
           required: true
@@ -320,8 +446,14 @@ paths:
           name: search
           schema: { type: string }
         - in: query
+          name: inventoryStatus
+          schema: { $ref: '#/components/schemas/InventoryStatus' }
+        - in: query
           name: sortBy
-          schema: { type: string, enum: [name, currentPrice, inventoryLevel, updatedAt] }
+          schema: { type: string, enum: [name, currentPrice, inventoryLevel, updatedAt], default: updatedAt }
+        - in: query
+          name: sortDir
+          schema: { type: string, enum: [asc, desc], default: desc }
         - in: query
           name: page
           schema: { type: integer, minimum: 1, default: 1 }
@@ -343,6 +475,8 @@ paths:
                         items: { $ref: '#/components/schemas/Product' }
                       pagination: { $ref: '#/components/schemas/OffsetPagination' }
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Products]
       summary: Create a product (admin only)
       requestBody:
@@ -404,13 +538,15 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
     patch:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Products]
       summary: Update a product (admin only)
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ProductInput' }
+            schema: { $ref: '#/components/schemas/ProductPatch' }
       responses:
         '200':
           description: Updated
@@ -423,6 +559,8 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/Product' }
     delete:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Products]
       summary: Delete a product (admin only)
       responses:
@@ -433,6 +571,8 @@ paths:
     parameters:
       - $ref: '#/components/parameters/ProductId'
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Products]
       summary: Mutate a product's competitor price or demand signal to simulate a live market event
       requestBody:
@@ -451,28 +591,101 @@ paths:
                   description: e.g. -15 for a 15% competitor price drop
       responses:
         '200':
-          description: Event applied
+          description: Event applied, with what was actually done
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/SuccessMessage' }
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          eventType: { type: string }
+                          magnitudePct: { type: number }
+                          summary: { type: string }
 
   /products/{productId}/generate-recommendation:
     parameters:
       - $ref: '#/components/parameters/ProductId'
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Products]
       summary: Trigger the 5-agent pricing pipeline for this product
-      description: >
-        Response is a Server-Sent Events stream (Content-Type: text/event-stream).
-        Events: {agent, status: "running"|"done"|"error", output?} for each of the
-        5 agents, followed by a final {type: "recommendation_ready", data: PricingRecommendation}
-        or {type: "recommendation_failed", error}.
+      description: |
+        Runs the five agents and streams their progress as Server-Sent Events.
+        Takes roughly 8 to 12 seconds against the live model.
+
+        **This is a POST, not an `EventSource`.** It needs the CSRF header and
+        a request body cannot ride on `EventSource`, so a client reads the
+        response body as a stream instead.
+
+        **Events are named**, so a client must use `addEventListener(name)`,
+        not `onmessage`. Six names exist. Every payload also repeats its name
+        in a `type` field, so a single parser can switch on the body alone:
+
+        | Event | Payload |
+        |---|---|
+        | `agent_started` | `{ type, agent, startedAt }` |
+        | `agent_completed` | `{ type, agent, durationMs, confidence, output, toolCalls, promptTokens, completionTokens }` |
+        | `agent_skipped` | `{ type, agent, reason }` |
+        | `agent_failed` | `{ type, agent, error, willRetry }` |
+        | `recommendation_ready` | `{ type, autoExecuted, recommendationId, blocked?, executionFailed? }` |
+        | `recommendation_failed` | `{ type, error, failedAgent? }` |
+
+        `recommendation_ready` carries an **id, not the recommendation**. Fetch
+        `GET /recommendations/{id}` for the full object.
+
+        **Order.** `MARKET_INTELLIGENCE` and `INVENTORY_COST` start together;
+        their `agent_started` events share a timestamp. `DEMAND_FORECASTING`,
+        `PRICING_STRATEGY` and `EXECUTION_COMPLIANCE` then run in sequence,
+        because each needs the one before it.
+
+        **Failure is in-band.** The stream always returns 200 once it has
+        opened, because headers are already flushed by the time an agent can
+        fail. A pipeline failure arrives as `recommendation_failed`, never as a
+        4xx or 5xx. Check the events, not the status.
+
+        A `: keep-alive` comment frame is sent every 15 seconds so proxies do
+        not close an idle connection. Ignore it. Responses carry
+        `Cache-Control: no-cache, no-transform` and `X-Accel-Buffering: no`;
+        any proxy in front of this must also disable buffering or the whole
+        stream arrives at once at the end, which defeats the point.
+
+        Disconnecting does not abort the run. The pipeline finishes and the
+        recommendation is persisted either way.
       responses:
         '200':
-          description: SSE stream of agent progress events
+          description: |
+            An SSE stream. Example:
+
+            ```
+            event: agent_started
+            data: {"type":"agent_started","agent":"MARKET_INTELLIGENCE","startedAt":"2026-09-20T06:16:52.251Z"}
+
+            event: agent_completed
+            data: {"type":"agent_completed","agent":"MARKET_INTELLIGENCE","durationMs":2219,"confidence":0.55,"output":{...},"toolCalls":[{"name":"get_competitor_prices","args":{"lookbackDays":7},"durationMs":4}]}
+
+            event: recommendation_ready
+            data: {"type":"recommendation_ready","autoExecuted":false,"recommendationId":"f2970c97-..."}
+            ```
           content:
             text/event-stream:
-              schema: { type: string }
+              schema:
+                type: string
+                description: Newline-delimited SSE frames, one JSON object per data line.
+        '403':
+          description: Missing the X-Pricewise-Client header
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: No such product in this organization
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   # --------------------------------------------------------- RECOMMENDATIONS
   /recommendations:
@@ -483,6 +696,12 @@ paths:
         - in: query
           name: status
           schema: { $ref: '#/components/schemas/RecommendationStatus' }
+        - in: query
+          name: productId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: minConfidence
+          schema: { type: number, minimum: 0, maximum: 1 }
         - in: query
           name: cursor
           schema: { type: string }
@@ -526,6 +745,8 @@ paths:
     parameters:
       - $ref: '#/components/parameters/RecommendationId'
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Recommendations]
       summary: Approve a pending recommendation (Pricing Analyst or Admin)
       responses:
@@ -544,6 +765,8 @@ paths:
     parameters:
       - $ref: '#/components/parameters/RecommendationId'
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Recommendations]
       summary: Reject a pending recommendation with a reason
       requestBody:
@@ -554,7 +777,7 @@ paths:
               type: object
               required: [reason]
               properties:
-                reason: { type: string, minLength: 3 }
+                reason: { type: string, minLength: 10, maxLength: 500 }
       responses:
         '200':
           description: Rejected
@@ -571,6 +794,8 @@ paths:
     parameters:
       - $ref: '#/components/parameters/RecommendationId'
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Recommendations]
       summary: Override the recommended price with a manually chosen price
       requestBody:
@@ -581,7 +806,7 @@ paths:
               type: object
               required: [modifiedPrice]
               properties:
-                modifiedPrice: { type: number, exclusiveMinimum: 0 }
+                modifiedPrice: { type: number, exclusiveMinimum: 0, maximum: 1000000 }
       responses:
         '200':
           description: Modified and executed
@@ -594,6 +819,91 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/PricingRecommendation' }
 
+  /recommendations/{recommendationId}/undo:
+    parameters:
+      - $ref: '#/components/parameters/RecommendationId'
+    post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
+      tags: [Recommendations]
+      summary: Revert a decision, putting the recommendation back to PENDING
+      description: >
+        Backs out an approve, reject or modify and restores the previous price
+        on the platform. This is what the toast's Undo calls. It is bounded:
+        only the user who resolved it can undo it, and only while it is the
+        most recent execution for that product.
+      responses:
+        '200':
+          description: Reverted, and back in the queue
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PricingRecommendation' }
+        '409':
+          description: >
+            Already undone, still pending, or superseded by a later price
+            change. CONFLICT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found, or belongs to another organization
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /recommendations/batch-approve:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
+      tags: [Recommendations]
+      summary: Approve several pending recommendations in one request
+      description: >
+        Partial success is the normal case, so this never fails as a whole.
+        Each id gets its own result and the caller is told plainly how many
+        went through. A recommendation another request resolved first comes
+        back as not ok rather than silently counting as approved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: One result per id, in the order supplied
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            ok: { type: boolean }
+                            error: { type: string, nullable: true }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   # ------------------------------------------------------------------ AUDIT
   /audit-logs:
     get:
@@ -603,6 +913,25 @@ paths:
         - in: query
           name: entityType
           schema: { type: string }
+        - in: query
+          name: entityId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: userId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: action
+          schema: { type: string }
+        - in: query
+          name: search
+          description: >
+            Matches action, entityType and an entityId prefix. Deliberately not
+            the actor's name: the name is resolved after the page is read, from
+            the organization's members, so it is not a column to filter on.
+            Filter by userId instead.
+          schema: { type: string, maxLength: 200 }
+        - { in: query, name: from, schema: { type: string, format: date-time } }
+        - { in: query, name: to, schema: { type: string, format: date-time } }
         - in: query
           name: cursor
           schema: { type: string }
@@ -682,11 +1011,23 @@ paths:
 
   /mock/ecommerce/update-price:
     post:
+      parameters:
+        - $ref: '#/components/parameters/ClientHeader'
       tags: [Mock Ecommerce]
-      summary: >
-        Internal mock of an external e-commerce platform's price-update endpoint.
-        Called only by the Execution & Compliance agent, never by the frontend.
-        Simulates latency and an occasional induced failure to exercise rollback logic.
+      summary: Mock of the storefront's price-update endpoint
+      description: >
+        Stands in for the external e-commerce platform. Called by the Execution
+        and Compliance agent, never by the frontend. Simulates latency and an
+        induced failure rate so the rollback path is exercised rather than
+        assumed.
+
+
+        **Unauthenticated, deliberately.** It is mounted outside `requireAuth`
+        because it represents a third-party system, not part of this API's
+        tenant surface. Nothing behind it reads tenant data: it takes a SKU and
+        a price and returns a receipt. In a real deployment this is someone
+        else's endpoint behind their own credentials.
+      security: []
       requestBody:
         required: true
         content:
@@ -699,10 +1040,21 @@ paths:
                 newPrice: { type: number }
       responses:
         '200':
-          description: Price updated on the (mock) platform
+          description: Price updated on the mock platform
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/SuccessMessage' }
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          sku: { type: string }
+                          price: { type: number }
+                          platformSyncedAt: { type: string, format: date-time }
+                          platformRef: { type: string, example: PLT-3f9a21cd }
         '502':
           description: Simulated platform failure — caller must roll back
           content:
@@ -717,6 +1069,14 @@ components:
       name: access_token
 
   parameters:
+    ClientHeader:
+      name: X-Pricewise-Client
+      in: header
+      required: true
+      description: >
+        Required on every state-changing verb. Any non-empty value. Missing it
+        is a 403 CSRF_REQUIRED. See rule 2 in the description above.
+      schema: { type: string, example: web }
     ProductId:
       name: productId
       in: path
@@ -741,28 +1101,63 @@ components:
       type: string
       enum: [LOW, NORMAL, OVERSTOCKED]
 
+    # Every code the API can return, with the status it maps to. Source of
+    # truth is apps/backend/src/lib/errors.ts, where one errorHandler
+    # middleware does the mapping; no controller sets a status itself.
+    ErrorCode:
+      type: string
+      enum:
+        - VALIDATION_ERROR   # 422
+        - UNAUTHENTICATED    # 401
+        - REFRESH_INVALID    # 401
+        - FORBIDDEN_ROLE     # 403, your role is insufficient
+        - CSRF_REQUIRED      # 403, the X-Pricewise-Client header is missing
+        - NOT_FOUND          # 404, also returned for another tenant's resource
+        - EMAIL_IN_USE       # 409
+        - INVITE_INVALID     # 400
+        - RATE_LIMITED       # 429
+        - AGENT_TIMEOUT      # 504
+        - LLM_UNAVAILABLE    # 503
+        - EXECUTION_FAILED   # 502
+        - CONFLICT           # 409
+        - INTERNAL_ERROR     # 500
+
     ErrorResponse:
       type: object
+      required: [success, error]
       properties:
         success: { type: boolean, example: false }
         error:
           type: object
+          required: [code, message]
           properties:
-            code: { type: string, example: VALIDATION_ERROR }
+            code: { $ref: '#/components/schemas/ErrorCode' }
             message: { type: string }
-            details: { type: object, nullable: true }
+            # Present only on VALIDATION_ERROR, and OMITTED rather than null
+            # when there is nothing to say. Do not expect the key.
+            details:
+              type: object
+              additionalProperties: true
+              description: Field-level errors, keyed by field name.
 
     SuccessEnvelope:
       type: object
+      required: [success]
       properties:
         success: { type: boolean, example: true }
 
+    # Endpoints that "just confirm" still wrap the message in `data`, because
+    # no endpoint returns a bare value. It is data.message, not message.
     SuccessMessage:
       allOf:
         - $ref: '#/components/schemas/SuccessEnvelope'
         - type: object
+          required: [data]
           properties:
-            message: { type: string }
+            data:
+              type: object
+              properties:
+                message: { type: string }
 
     SuccessUser:
       allOf:
@@ -804,8 +1199,22 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        confidenceThreshold: { type: number }
+        confidenceThreshold:
+          type: number
+          description: >
+            At or above this, a recommendation executes without a human. Below
+            it, the recommendation goes to the approval queue.
+        maxPriceDeltaPct:
+          type: number
+          description: Largest single price move allowed, as a fraction.
         createdAt: { type: string, format: date-time }
+
+    CategoryRule:
+      type: object
+      properties:
+        category: { type: string }
+        marginFloorPct: { type: number, minimum: 0, maximum: 1 }
+        maxPriceDeltaPct: { type: number, minimum: 0.01, maximum: 1, nullable: true }
 
     Invite:
       type: object
@@ -824,21 +1233,58 @@ components:
         sku: { type: string }
         name: { type: string }
         category: { type: string }
-        currentPrice: { type: number }
-        cost: { type: number }
+        currentPrice: { type: number, exclusiveMinimum: 0 }
+        cost: { type: number, exclusiveMinimum: 0 }
         marginFloorPct: { type: number, minimum: 0, maximum: 1 }
-        inventoryLevel: { type: integer }
+        inventoryLevel: { type: integer, minimum: 0 }
+
+    # Every field optional, at least one required, and `sku` is absent on
+    # purpose: it is the identifier other records are reconciled against, so
+    # it is set at creation and never patched.
+    ProductPatch:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string }
+        category: { type: string }
+        currentPrice: { type: number, exclusiveMinimum: 0 }
+        cost: { type: number, exclusiveMinimum: 0 }
+        marginFloorPct: { type: number, minimum: 0, maximum: 1 }
+        inventoryLevel: { type: integer, minimum: 0 }
 
     Product:
-      allOf:
-        - $ref: '#/components/schemas/ProductInput'
-        - type: object
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        category: { type: string }
+        currentPrice: { type: number }
+        cost: { type: number }
+        marginFloorPct: { type: number }
+        # Computed server-side, never stored, so the number on screen cannot
+        # disagree with the one the rule engine enforces.
+        margin: { type: number }
+        belowFloor: { type: boolean }
+        inventoryLevel: { type: integer }
+        inventoryStatus: { $ref: '#/components/schemas/InventoryStatus' }
+        latestCompetitorPrice:
+          nullable: true
+          type: object
+          properties:
+            competitor: { type: string }
+            price: { type: number }
+            scrapedAt: { type: string, format: date-time }
+        pendingRecommendation:
+          nullable: true
+          type: object
           properties:
             id: { type: string, format: uuid }
-            organizationId: { type: string, format: uuid }
-            inventoryStatus: { $ref: '#/components/schemas/InventoryStatus' }
-            createdAt: { type: string, format: date-time }
-            updatedAt: { type: string, format: date-time }
+            recommendedPrice: { type: number }
+            confidenceScore: { type: number }
+            status: { $ref: '#/components/schemas/RecommendationStatus' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
 
     PricingRecommendation:
       type: object
@@ -847,24 +1293,79 @@ components:
         productId: { type: string, format: uuid }
         recommendedPrice: { type: number }
         currentPriceAtTime: { type: number }
+        # Computed in code, not by the model.
+        deltaPct: { type: number }
         confidenceScore: { type: number, minimum: 0, maximum: 1 }
         rationale: { type: string }
+        factorWeights:
+          nullable: true
+          type: object
+          additionalProperties: { type: number }
+          description: The four factors the strategy agent weighted, summing to 1.
         status: { $ref: '#/components/schemas/RecommendationStatus' }
         resolvedByUserId: { type: string, format: uuid, nullable: true }
+        resolvedBy:
+          nullable: true
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
         resolvedAt: { type: string, format: date-time, nullable: true }
         rejectionReason: { type: string, nullable: true }
         modifiedPrice: { type: number, nullable: true }
+        failureReason: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
+        product:
+          nullable: true
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            sku: { type: string }
+            name: { type: string }
+            category: { type: string }
+            currentPrice: { type: number }
+
+    ToolCall:
+      type: object
+      description: One tool the model chose to call, with the arguments it chose.
+      properties:
+        name: { type: string, example: get_competitor_prices }
+        args: { type: object, additionalProperties: true }
+        durationMs: { type: integer }
 
     AgentRun:
       type: object
+      description: >
+        One agent invocation, persisted whether it succeeded or failed. This is
+        the explainability record: it carries the tool calls the model decided
+        to make, which is what lets a reviewer see how a price was reached.
       properties:
+        id: { type: string, format: uuid }
         agentName:
           type: string
           enum: [MARKET_INTELLIGENCE, DEMAND_FORECASTING, INVENTORY_COST, PRICING_STRATEGY, EXECUTION_COMPLIANCE]
-        input: { type: object }
-        output: { type: object }
+        input: { type: object, additionalProperties: true }
+        output: { type: object, additionalProperties: true }
+        toolCalls:
+          type: array
+          items: { $ref: '#/components/schemas/ToolCall' }
+        confidence: { type: number, nullable: true }
+        model: { type: string, example: openai/gpt-oss-20b }
+        promptTokens: { type: integer }
+        completionTokens: { type: integer }
         durationMs: { type: integer }
+        error: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    PriceExecution:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        oldPrice: { type: number }
+        newPrice: { type: number }
+        status: { type: string }
+        platformRef: { type: string, nullable: true }
+        error: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
 
     PricingRecommendationDetail:
@@ -875,15 +1376,27 @@ components:
             agentRuns:
               type: array
               items: { $ref: '#/components/schemas/AgentRun' }
+            executions:
+              type: array
+              items: { $ref: '#/components/schemas/PriceExecution' }
+            comparable:
+              type: array
+              description: Past decisions on similar products, for context.
+              items: { $ref: '#/components/schemas/PricingRecommendation' }
 
     AuditLog:
       type: object
       properties:
         id: { type: string, format: uuid }
+        # Null means the system acted rather than a person. That is how an
+        # auto-executed price change is told apart from a human approval.
         userId: { type: string, format: uuid, nullable: true }
-        action: { type: string }
+        # Resolved from the organization's members. Null when userId is null,
+        # or when that person is no longer a member.
+        userName: { type: string, nullable: true }
+        action: { type: string, example: PRICE_APPROVED_AND_EXECUTED }
         entityType: { type: string }
         entityId: { type: string }
-        beforeValue: { type: object, nullable: true }
-        afterValue: { type: object, nullable: true }
+        beforeValue: { type: object, nullable: true, additionalProperties: true }
+        afterValue: { type: object, nullable: true, additionalProperties: true }
         createdAt: { type: string, format: date-time }

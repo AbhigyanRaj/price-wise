@@ -42,6 +42,14 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      # An API document nobody checks stops being true within a sprint. This
+      # reads the routers and fails if a route is undocumented, documented but
+      # gone, or if openapi.json was not regenerated from the YAML.
+      - name: API contract matches the routes
+        env:
+          NODE_ENV: test
+        run: bun run docs:openapi --check
+
   test:
     name: Tests
     runs-on: ubuntu-latest
