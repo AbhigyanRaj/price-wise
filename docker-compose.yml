@@ -2,7 +2,9 @@
 #
 # `docker compose up` brings up Postgres, the API and the web app, migrates and
 # seeds the database, and leaves a populated product at http://localhost:5173.
-# `bun run db:up` starts only the database, for the faster Bun dev path.
+# `bun run db:up` starts postgres and adminer only, for the faster Bun dev
+# path: the api and web services would otherwise take :4000 and :5173 and the
+# `bun run dev` that follows would fail on both.
 #
 # Local Postgres rather than a shared staging database, so a clean clone needs
 # no cloud account. Supabase *is* Postgres, so Prisma speaks the same protocol
