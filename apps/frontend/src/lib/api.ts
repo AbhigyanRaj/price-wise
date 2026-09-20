@@ -20,8 +20,14 @@
  * Exported because the SSE stream has to resolve against the same origin. Two
  * independent copies of this constant is how the "/api" prefix came to be
  * hardcoded in two files.
+ *
+ * Trailing slashes are stripped. Every path below starts with one, so a base
+ * of "https://api.example.com/" produces "https://api.example.com//auth/me",
+ * which Express answers with a 404 rather than routing. Pasting a URL with the
+ * slash on the end is the easiest thing in the world to do in a deployment
+ * dashboard, and the resulting failure looks nothing like its cause.
  */
-export const API_BASE: string = import.meta.env.VITE_API_URL ?? "/api";
+export const API_BASE: string = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 
 const BASE = API_BASE;
 

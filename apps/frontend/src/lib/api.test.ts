@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, afterEach } from "vitest";
-import { api, ApiError } from "./api";
+import { api, ApiError, API_BASE } from "./api";
 
 /**
  * The deployment mistake this file exists for: shipping the frontend without
@@ -43,5 +43,21 @@ describe("an API that answers with HTML", () => {
     const err = (await api.get("/products").catch((e: unknown) => e)) as ApiError;
 
     expect(err.message).toContain("upstream request timeout");
+  });
+});
+
+/**
+ * A base URL pasted with a trailing slash is the commonest deployment typo
+ * there is, and it produced "//auth/me", which Express answers with a 404
+ * rather than routing. The failure looks nothing like its cause, so the base
+ * normalises instead of trusting whoever filled in the dashboard.
+ */
+describe("API_BASE normalisation", () => {
+  test("has no trailing slash, whatever VITE_API_URL held", () => {
+    expect(API_BASE).not.toMatch(/\/$/);
+  });
+
+  test("a path appended to it never doubles the separator", () => {
+    expect(`${API_BASE}/auth/me`).not.toContain("//auth");
   });
 });
